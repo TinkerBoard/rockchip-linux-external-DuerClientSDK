@@ -1,0 +1,37 @@
+{
+    "alertsCapabilityAgent":{
+        "databaseFilePath":"/data/cfg/alerts/alerts.db",
+        "downloadAssetsEnabled":false
+    },
+    "certifiedSender":{
+        "databaseFilePath":"/data/cfg/certifiedSender.db"
+    },
+    "authDelegate":{
+        "clientId":"0G0cSPq0bLbDoQaHCi7e3cOcUXCikEll"
+    },
+    "dcsSdkLogger":{
+        "clickLogFilename":"/data/cfg/click.log",
+        "clickLogUrl":"https://xiaodu.baidu.com/saiya/log?",
+        "dcsVelocityLogFilename":"/data/cfg/dcsVelocity.log"
+    },
+    "libcurlUtils":{
+        "curloptCapath":"/etc/ssl/certs/",
+        "dcsSandbox":false
+    },
+    "dcssdkVersion":{
+        "version":"0.3.8"
+    },
+    "wakeup":{
+        "libraryVersion":"0.2.1",
+        "modelVersion":"0.2.2",
+        "commonWakeup":{
+            "kittResourceFilename":"/data/resources/common.res",
+            "kittModelFilename":"/data/resources/xiaodu_l12r10_sen_35_35_32_highsen_40_40_39_0104.umdl",
+            "keyWords":"小度小度,小度小度,小度小度",
+            "sensitivity":"0.35,0.35,0.32",
+            "highSensitivity":"0.4,0.4,0.39",
+            "audioGain":2,
+            "frontEnd":true
+        }
+    }
+}
