@@ -173,7 +173,7 @@ bool DCSApplication::initialize() {
         DeviceIoWrapper::getInstance()->setMute(true);
     }
 
-#ifdef MTK8516
+#if 1
     DuerLinkWrapper::getInstance()->initDuerLink();
 
     DuerLinkWrapper::getInstance()->startNetworkRecovery();

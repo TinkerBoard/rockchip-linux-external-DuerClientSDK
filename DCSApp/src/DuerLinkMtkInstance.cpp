@@ -119,7 +119,7 @@ bool tmp_wpa_conf(const string ssid, const string pwd, const string path) {
     insert_ct += pwd;
     insert_ct += NETWORK_WPA_CONF_END;
 
-    APP_INFO("Wpa_supplicant.conf insert CT [%s]", insert_ct.c_str());
+    fprintf(stderr,"Wpa_supplicant.conf insert CT [%s]\n", insert_ct.c_str());
 
     deviceCommonLib::deviceTools::printTickCount("network_config cp wpa.conf begin.");
 
@@ -184,12 +184,10 @@ bool start_wpa_supplicant() {
 
     deviceCommonLib::deviceTools::printTickCount("network_config connect_ap begin.");
 
-    system_command("echo 1 > /dev/wmtWifi &");
-
-    sleep(1);
-
-    system_command("/usr/bin/connect_ap.sh &");
-
+    system_command("killall wpa_supplicant &");
+    system_command("wpa_supplicant -B -i wlan0 -c /data/cfg/wpa_supplicant.conf");
+    system_command("killall dhcpcd");
+    system_command("dhcpcd");//udhcpc -b -i wlan0 -q ");
     deviceCommonLib::deviceTools::printTickCount("network_config connect_ap end.");
 
     return true;
@@ -205,7 +203,7 @@ bool set_ap_tmp_ipaddr() {
         return false;
     }
 
-    return system_command("ifconfig ap0 192.168.1.1 netmask 255.255.255.0 &");
+    return system_command("ifconfig wlan1 192.168.1.1 netmask 255.255.255.0 &");
 }
 
 bool delete_tmp_addr() {
@@ -214,7 +212,7 @@ bool delete_tmp_addr() {
         return true;
     }
 
-    return system_command("ip addr delete 192.168.1.1 dev ap0 &");
+    return system_command("ip addr delete 192.168.1.1 dev wlan1 &");
 }
 
 bool echo_ap_to_devwifi() {
@@ -248,7 +246,7 @@ bool starup_ap_interface() {
         return true;
     }
 
-    return system_command("ifconfig ap0 up &");
+    return system_command("ifconfig wlan1 up &");
 }
 
 bool down_ap_interface() {
@@ -257,7 +255,7 @@ bool down_ap_interface() {
         return true;
     }
 
-    return system_command("ifconfig ap0 down &");
+    return system_command("ifconfig wlan1 down &");
 }
 
 bool starup_wlan0_interface() {
@@ -372,7 +370,8 @@ void set_softAp_ssid_and_pwd(string hostapd_config_file_path) {
 
 bool softap_prepare_env_cb() {
     bool ret_value = true;
-
+    system("softapDemo DuerOS_4444");
+    return ret_value;
     APP_INFO("prepare softAp environment resource.");
 
     set_softAp_ssid_and_pwd(DUERLINK_WPA_HOSTAPD_CONFIG_FILE_PATH_MTK);
@@ -429,6 +428,8 @@ bool softap_destroy_env_cb() {
 
     APP_INFO("destroy softAp environment resource.");
 
+    system("softapDemo stop");
+    return ret_value;
     if (!stop_dhcp_server()) {
         APP_ERROR("stop dhcp server failed.");
         ret_value = false;
@@ -472,9 +473,8 @@ bool platform_connect_wifi_cb(const char *ssid,
     m_target_ssid = ssid;
     m_target_pwd = pwd;
 
-    APP_INFO("Connect wifi, ssid and pwd [%s] [%s].",
-             m_target_ssid.c_str(),
-             m_target_pwd.c_str());
+    deviceCommonLib::deviceTools::printTickCount(m_target_ssid.c_str());
+    deviceCommonLib::deviceTools::printTickCount(m_target_pwd.c_str());
 
     tmp_wpa_conf(m_target_ssid, m_target_pwd, DUERLINK_WPA_CONFIG_FILE_MTK);
 
@@ -791,9 +791,9 @@ void DuerLinkMtkInstance::set_monitor_observer(NetWorkPingStatusObserver *ping_l
 }
 
 bool DuerLinkMtkInstance::check_recovery_network_status() {
-#ifdef MTK8516
+//#ifdef MTK8516
     deviceCommonLib::deviceTools::printTickCount("network_config main_thread recovery begin.");
-#endif
+//#endif
 
     if (nullptr != m_pMtkConfigObserver) {
         (m_pMtkConfigObserver)->notify_network_config_status(duerLink::ENetworkRecoveryStart);

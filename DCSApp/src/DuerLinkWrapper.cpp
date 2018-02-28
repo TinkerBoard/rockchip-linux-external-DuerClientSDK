@@ -83,7 +83,7 @@ void DuerLinkWrapper::initDuerLink() {
     DuerLinkMtkInstance::get_instance()->init_config_network_parameter(duerLink::platform_type::EHodor,
                                                                        duerLink::auto_config_network_type::EAll,
                                                                        DeviceIoWrapper::getInstance()->getDeviceId(),
-                                                                       "ap0");
+                                                                       "wlan1");
 
     DuerLinkMtkInstance::get_instance()->set_networkConfig_observer(this);
 

@@ -12,7 +12,7 @@
 #include "network_observer/network_status_observer.h"
 #include "device_ctrl_observer/duer_link_received_data_observer.h"
 
-#define NETWORK_SSID_CONFIG_HEAD        "#Basic configuration\n\ninterface=ap0\nssid="
+#define NETWORK_SSID_CONFIG_HEAD        "#Basic configuration\n\ninterface=wlan1\nssid="
 #define NETWORK_SSID_CONFIG_MIDDLE      "channel=6\nctrl_interface=/var/run/hostapd\n\n"\
                                         "#WPA and WPA2 configuration\n"\
                                         "macaddr_acl=0\nauth_algs=1\nignore_broadcast_ssid=0\n#wpa=2\n"\
@@ -24,13 +24,13 @@
 #define NETWORK_WPA_CONF_HEAD           "\nnetwork={\n\tssid=\""
 #define NETWORK_WPA_CONF_MIDDLE         "\"\n\tpsk=\""
 #define NETWORK_WPA_CONF_END            "\"\n\tkey_mgmt=WPA-PSK\n}\n"
-#define DUERLINK_WPA_INSERT_FLAG        "country=GB"
+#define DUERLINK_WPA_INSERT_FLAG        "ap_scan=1"
 
-#define DUERLINK_NETWORK_DEVICE_MTK_FOR_AP "ap0"
+#define DUERLINK_NETWORK_DEVICE_MTK_FOR_AP "wlan1"
 #define DUERLINK_NETWORK_DEVICE_MTK_FOR_WORK "wlan0"
 
 #define DUERLINK_WPA_HOSTAPD_CONFIG_FILE_PATH_MTK "/etc/hostapd_mtk.conf"
-#define DUERLINK_WPA_CONFIG_FILE_MTK "/data/etc/wpa_supplicant.conf"
+#define DUERLINK_WPA_CONFIG_FILE_MTK "/data/cfg/wpa_supplicant.conf"
 
 #define SSID_PREFIX_HODOR       "Hodor"
 #define SSID_PREFIX_STANDARD    "Standard"
