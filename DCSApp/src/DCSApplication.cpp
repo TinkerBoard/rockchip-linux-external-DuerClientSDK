@@ -43,7 +43,7 @@ static const std::string PATH_TO_CONFIG = "/data/resources/config.json";
 static const std::string PATH_TO_RUNTIME_CONFIG = "/data/duer/runtime.json";
 #else
 /// The runtime config path of DCSSDK
-static const std::string PATH_TO_RUNTIME_CONFIG = "/data/resources/runtime.json";
+static const std::string PATH_TO_RUNTIME_CONFIG = "/data/cfg/runtime.json";
 #endif
 
 std::unique_ptr<DCSApplication> DCSApplication::create() {
