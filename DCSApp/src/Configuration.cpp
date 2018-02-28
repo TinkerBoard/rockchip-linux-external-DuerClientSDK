@@ -64,8 +64,8 @@ void Configuration::release() {
     }
 }
 
-Configuration::Configuration():m_appConfigFile("/usr/appresources/app_config.json"),
-                               m_duerosConfigFile("/usr/appresources/dueros_config.json"),
+Configuration::Configuration():m_appConfigFile("/data/cfg/app_config.json"),
+                               m_duerosConfigFile("/data/cfg/dueros_config.json"),
                                m_commonVolume(DEFAULT_COMMON_VOLUME),
                                m_alertsVolume(DEFAULT_ALERTS_VOLUME),
                                m_infoPlaybackDevice(INFO_DEFAULT_PLAYBACK_DEVICE),
