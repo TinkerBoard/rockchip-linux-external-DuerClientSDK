@@ -19,7 +19,7 @@
 
 #include <pthread.h>
 #include <string>
-
+#include "DeviceIo/InfoLed.h"
 namespace duerOSDcsApp {
 namespace framework {
 

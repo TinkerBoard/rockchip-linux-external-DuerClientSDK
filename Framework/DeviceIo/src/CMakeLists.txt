@@ -250,6 +250,7 @@ elseif(${Platform} MATCHES "Box86")
 else()
     message("DeviceIo Ubuntu编译")
     add_library(DeviceIo SHARED
+                linux/InfoLed.cpp
                 linux/DeviceIo.cpp)
 
 endif()

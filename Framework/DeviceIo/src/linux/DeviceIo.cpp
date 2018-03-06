@@ -175,6 +175,7 @@ DeviceIo* DeviceIo::m_instance = nullptr;
 DeviceInNotify* DeviceIo::m_notify = nullptr;
 pthread_once_t DeviceIo::m_initOnce = PTHREAD_ONCE_INIT;
 pthread_once_t DeviceIo::m_destroyOnce = PTHREAD_ONCE_INIT;
+static std::shared_ptr<duerOSDcsApp::framework::InfoLed> g_infoled;
 
 DeviceIo::DeviceIo() {
     int ret = 0;
@@ -200,6 +201,7 @@ DeviceIo::DeviceIo() {
     user_volume.volume = user_get_volume();
 
     m_destroyOnce = PTHREAD_ONCE_INIT;
+
 }
 
 DeviceIo::~DeviceIo() {
@@ -222,6 +224,9 @@ void DeviceIo::releaseInstance() {
 void DeviceIo::init() {
     if (m_instance == nullptr) {
         m_instance = new DeviceIo;
+        g_infoled = std::make_shared<duerOSDcsApp::framework::InfoLed>();
+        g_infoled->init();
+        g_infoled->led_open(MODE_BOOTED,0);
     }
 }
 
@@ -241,6 +246,95 @@ DeviceInNotify* DeviceIo::getNotify() {
 }
 
 int DeviceIo::controlLed(LedState cmd, void *data, int len) {
+    APP_ERROR("\n\n");
+    APP_ERROR("controlLed:%d\n",cmd);
+    APP_ERROR("\n\n");
+    switch(cmd) {
+        case LedState::LED_NET_RECOVERY:
+            g_infoled->led_open(MODE_SENSORY_STARTED,0);
+            break; 
+        case LedState::LED_NET_WAIT_CONNECT:
+            APP_ERROR("controlLed:%d\n",cmd);
+            g_infoled->led_open(MODE_WIFI_CONNECT,0);
+            break;
+        case LedState::LED_NET_DO_CONNECT:
+            g_infoled->led_open(MODE_WIFI_CONNECTING,0);
+            break;
+        case LedState::LED_NET_CONNECT_FAILED:
+            g_infoled->led_open(MODE_WIFI_ERR,0);
+            break;
+        case LedState::LED_NET_CONNECT_SUCCESS:
+            g_infoled->led_open(MODE_OFF,0);
+            break;
+        case LedState::LED_NET_WAIT_LOGIN:
+            break;
+        case LedState::LED_NET_DO_LOGIN:
+            break;
+        case LedState::LED_NET_LOGIN_FAILED:
+            g_infoled->led_open(MODE_WIFI_ERR,0);
+            break;
+        case LedState::LED_NET_LOGIN_SUCCESS:
+            g_infoled->led_open(MODE_OFF,0);
+            break;
+
+        case LedState::LED_WAKE_UP_DOA:    // param -180 ~ 180
+            g_infoled->led_open(MODE_VP_WAKEUP,0);
+            break;
+        case LedState::LED_WAKE_UP:        // no param
+            g_infoled->led_open(MODE_VP_WAKEUP,0);
+            break;
+        case LedState::LED_SPEECH_PARSE:
+            g_infoled->led_open(MODE_VP,0);
+            break;
+        case LedState::LED_PLAY_TTS:
+            g_infoled->led_open(MODE_VP,0);
+            break;
+        case LedState::LED_PLAY_RESOURCE:
+            g_infoled->led_open(MODE_VP,0);
+            break;
+
+        case LedState::LED_BT_WAIT_PAIR:
+            break;
+        case LedState::LED_BT_DO_PAIR:
+            break;
+        case LedState::LED_BT_PAIR_FAILED:
+            break;
+        case LedState::LED_BT_PAIR_SUCCESS:
+            break;
+        case LedState::LED_BT_PLAY:
+            break;
+        case LedState::LED_BT_CLOSE:
+            break;
+
+        case LedState::LED_VOLUME:
+            g_infoled->led_open(MODE_VOLUME,*(int*)data / 10); 
+            break;
+        case LedState::LED_MUTE:
+            g_infoled->led_open(MODE_VOLUME,0); 
+            break;
+
+        case LedState::LED_DISABLE_MIC:
+            g_infoled->led_open(MODE_MIC_MUTE,0);
+            break;
+
+        case LedState::LED_ALARM:
+            break;
+
+        case LedState::LED_SLEEP_MODE:
+            break;
+
+        case LedState::LED_OTA_DOING:
+            break;
+        case LedState::LED_OTA_SUCCESS:
+            break;
+
+        case LedState::LED_CLOSE_A_LAYER:
+            g_infoled->led_open(MODE_OFF,0);
+            break;
+        case LedState::LED_ALL_OFF:    // no param
+            g_infoled->led_open(MODE_OFF,0);
+            break;
+    }
     return 0;
 }
 
