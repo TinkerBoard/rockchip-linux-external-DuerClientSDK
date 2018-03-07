@@ -22,6 +22,7 @@
 #include "DeviceIoWrapper.h"
 #include "DuerLinkWrapper.h"
 #include "SystemUpdateRevWrapper.h"
+#include "DCSKeyHandler.h"
 
 namespace duerOSDcsApp {
 namespace application {
@@ -148,6 +149,8 @@ private:
      * \endif
      */
     deviceCommonLib::deviceTools::Timer m_detectNTPTimer;
+
+    std::unique_ptr<DCSKeyHandler> m_keyHandler;
 };
 
 }  // namespace application

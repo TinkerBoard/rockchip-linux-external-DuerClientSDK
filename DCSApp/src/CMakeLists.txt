@@ -64,6 +64,8 @@ add_executable(duer_linux
         MediaPlayer/OffsetManager.cpp
         MediaPlayer/BlueToothPlayerProxy.cpp
         MediaPlayer/PcmResampler.cpp
+        get_event.cpp
+        DCSKeyHandler.cpp
         ${LocalTtsProxy}
         ${LocalSynthesizerPlayer}
         ${vendor_AUDIO_INPUT_SOURCE_FILES})

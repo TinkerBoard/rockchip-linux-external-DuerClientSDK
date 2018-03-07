@@ -71,6 +71,11 @@ bool DCSApplication::initialize() {
 
     DeviceIoWrapper::getInstance()->initCommonVolume(Configuration::getInstance()->getCommVol());
     DeviceIoWrapper::getInstance()->initAlertVolume(Configuration::getInstance()->getAlertsVol());
+    m_keyHandler = DCSKeyHandler::create(DeviceIoWrapper::getInstance());
+
+    if (m_keyHandler == nullptr) {
+      printf("Start key handler failed!\n");
+    }
 
     /*
      * Creating the media players.

@@ -37,7 +37,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
-#include "SampleApp/get_event.h"
+#include "DCSApp/get_event.h"
 
 #define NUMBER_OF_LEDS      12
 #define DEV_INPUT_EVENT     "/dev/input"
