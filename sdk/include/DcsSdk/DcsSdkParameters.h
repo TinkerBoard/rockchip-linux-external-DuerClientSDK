@@ -33,7 +33,9 @@
 #include <DcsSdk/ApplicationImplementation.h>
 #include <DcsSdk/ConnectionStatusObserverInterface.h>
 #include <DcsSdk/DialogUXStateObserverInterface.h>
+//#ifdef KITTAI_KEY_WORD_DETECTOR
 #include <DcsSdk/KeyWordObserverInterface.h>
+//#endif
 #include <DcsSdk/LocalMediaPlayerInterface.h>
 #include <DcsSdk/MediaPlayerInterface.h>
 
@@ -68,8 +70,7 @@ public:
             m_connectionObservers(nullptr),
             m_applicationImplementation(nullptr),
             m_localTtsMediaPlayer(nullptr),
-            m_localPromptPlayer(nullptr),
-            m_enableSdkWakeup(true) {
+            m_localPromptPlayer(nullptr) {
     }
 
     /**
@@ -117,7 +118,7 @@ public:
      *     @param[in] value Tts player handler.
      * \else
      *     @brief 设置TTS player的实例指针。
-     *     @param[in] value Tts player实例指针。
+     *     @param[in] value Tts player实例指针。kwd_get_heuristic_snr
      * \endif
      */
     void setSpeakMediaPlayer(std::shared_ptr<MediaPlayerInterface> value) {
@@ -243,6 +244,7 @@ public:
         m_customizeDirective = customizeDirective;
     }
 
+//#ifdef KITTAI_KEY_WORD_DETECTOR
     /**
      * \if english
      *     @brief Set value form member m_keyWordObserverInterface.
@@ -255,19 +257,7 @@ public:
     void setKeyWordObserverInterface(std::shared_ptr<sdkInterfaces::KeyWordObserverInterface> keyWordObserverInterface) {
         m_keyWordObserverInterface = keyWordObserverInterface;
     }
-
-    /**
-     * \if english
-     *     @brief Set value form member m_enableSdkWakeup.
-     *     @param[in] value True/False: enable/disable baidu wakeup lib.
-     * \else
-     *     @brief 设置是否使用百度的唤醒库。
-     *     @param[in] value True/False：使用/不使用百度的唤醒库。
-     * \endif
-     */
-    void setEnableSdkWakeup(const bool enableWakeup) {
-        m_enableSdkWakeup = enableWakeup;
-    }
+//#endif
 
     /**
      * \if english
@@ -477,19 +467,6 @@ public:
         return m_keyWordObserverInterface;
     }
 
-    /**
-     * \if english
-     *     @brief Get value of member m_enableSdkWakeup.
-     *     @return Value of member m_enableSdkWakeup.
-     * \else
-     *     @brief 获取是否使用百度唤醒库的配置。
-     *     @return True/False：使用/不使用百度唤醒库。
-     * \endif
-     */
-    bool getEnableSdkWakeup() {
-        return m_enableSdkWakeup;
-    }
-
 private:
     /**
      * \if english
@@ -611,6 +588,7 @@ private:
      */
     std::vector<std::pair<std::string, std::string>> m_customizeDirective;
 
+//#ifdef KITTAI_KEY_WORD_DETECTOR
     /**
      * \if english
      *     @brief KeyWordObserverInterface handler.
@@ -619,15 +597,7 @@ private:
      * \endif
      */
     std::shared_ptr<sdkInterfaces::KeyWordObserverInterface> m_keyWordObserverInterface;
-
-    /**
-     * \if english
-     *     @brief Enable/disable baidu wakeup library.
-     * \else
-     *     @brief 启用/不启用百度唤醒库。
-     * \endif
-     */
-    bool m_enableSdkWakeup;
+//#endif
 
     /**
      * \if english
@@ -637,7 +607,6 @@ private:
      * \endif
      */
     std::string m_clientSecret;
-
 };
 
 }  // namespace sdkInterfaces

@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef DEVICE_COMMON_LIB_RUMTIMECONFIGURATION_INCLUDE_CONFIGURATION_NODE_H_
-#define DEVICE_COMMON_LIB_RUMTIMECONFIGURATION_INCLUDE_CONFIGURATION_NODE_H_
+#ifndef DEVICE_COMMON_LIB_CONFIGURATION_INCLUDE_CONFIGURATION_NODE_H_
+#define DEVICE_COMMON_LIB_CONFIGURATION_INCLUDE_CONFIGURATION_NODE_H_
 
 #include <chrono>
 #include <memory>
@@ -34,6 +34,59 @@
 
 namespace deviceCommonLib {
 namespace configuration {
+
+/**
+ * 通过用户给定的key值，生成变换后加密、解密用的key。
+ * @param key 输入的key值。
+ * @param keyLen 输入key的长度。
+ * @param out 转换后的key值（长度为AES_BLOCK_SIZE）
+ * @return True/False 成功/失败
+ */
+bool genKey(const unsigned char* key, size_t keyLen, unsigned char* out);
+
+/**
+ * 使用CFB方式，基于传入的key值对字符串进行加密。
+ * @param key 输入的key值。
+ * @param keyLen key长度。
+ * @param src 要加密的字符串。
+ * @param srcLen 字符串长度。
+ * @param out 加密后的字符串。
+ * @param outLen 加密后字符串的长度。
+ * @return True/False 成功/失败。
+ *
+ * @note 如果返回为True，调用者使用后需要调用free函数释放out指针。
+ */
+bool aesCfbEncrypt(const unsigned char* key, size_t keyLen, const unsigned char* src,
+                          size_t srcLen, unsigned char*& out, int& outLen);
+
+/**
+ * 使用CFB方式，基于传入的key值对字符串进行解密。
+ * @param key 输入的key值。
+ * @param keyLen key长度。
+ * @param src 要解密的字符串。
+ * @param srcLen 字符串长度。
+ * @param out 解密后的字符串。
+ * @param outLen 解密后字符串的长度。
+ * @return True/False 成功/失败。
+ *
+ * @note 如果返回为True，调用者使用后需要调用free函数释放out指针。
+ */
+bool aesCfbDecrypt(const unsigned char* key, size_t keyLen, const unsigned char* src,
+                          size_t srcLen, unsigned char*& out, int& outLen);
+
+/**
+ * 依据输入的key值解密文件
+ * @param filename 文件名
+ * @param key key值
+ * @param keyLen key的长度
+ * @param out 解密后的字符串
+ * @param outLen 解密后字符串的长度
+ * @return True/False 成功/失败
+ *
+ * @note 如果返回为True，调用者使用后需要调用free函数释放out指针
+ */
+bool decryptFile(const std::string& filename, const unsigned char* key, size_t keyLen,
+                        unsigned char*& out, int& outLen);
 
 class ConfigurationNode{
 public:
@@ -151,14 +204,19 @@ public:
      *  @param object rapidjson::Value pointer which passed into node
      *  @param fileName file name that contains json string
      *  @param doc rapidjson::Document pointer
+     *  @param[in] secretKey key used to encrypt
+     *  @param[in] keyLen key length
      * \else
      *  @brief 构造configuration node
      *  @param object rapidjson::Value 指针
      *  @param fileName 包含json字符串的文件名
      *  @param doc rapidjson::Document 指针
+     *  @param[in] secretKey 加密用的key
+     *  @param[in] keyLen key的长度
      * \endif
      */
-    ConfigurationNode(rapidjson::Value* object, const std::string& fileName, rapidjson::Document* doc);
+    ConfigurationNode(rapidjson::Value* object, const std::string& fileName, rapidjson::Document* doc,
+                      unsigned char* secretKey, int keyLen);
 
     /**
      *\if english
@@ -216,7 +274,7 @@ private:
      *  @return 初始化成功或失败
      * \endif
      */
-    friend bool initialize(ConfigurationNode node);
+    friend bool initialize(ConfigurationNode& node);
 
     /**
      * \if english
@@ -229,7 +287,7 @@ private:
      *  @return 卸载初始化成功或失败
      * \endif
      */
-    friend void uninitialize(ConfigurationNode node);
+    friend void uninitialize(ConfigurationNode& node);
 
     /**
      *\if english
@@ -288,7 +346,6 @@ protected:
     */
     rapidjson::Value* m_object;
 
-
     /**
      *\if english
      * @brief  file name which was used by RuntimeConfigurationNode
@@ -306,7 +363,26 @@ protected:
      *\endif
      */
     rapidjson::Document * m_document;
+
+    /**
+     * \if english
+     *     @brief key used to encrypt
+     * \else
+     *     @brief 加密使用的key值
+     * \endif
+     */
+    unsigned char* m_secretKey;
+
+    /**
+     * \if english
+     *     @brief length of key
+     * \else
+     *     @brief key长度
+     * \endif
+     */
+    int m_keyLen;
 };
+
 template <typename InputType, typename OutputType, typename DefaultType>
 bool ConfigurationNode::getDuration(const std::string& key, OutputType* out, DefaultType defaultValue) const {
     int temp;
@@ -320,4 +396,4 @@ bool ConfigurationNode::getDuration(const std::string& key, OutputType* out, Def
 }  // namespace configuration
 }  // namespace deviceCommonLib
 
-#endif // DEVICE_COMMON_LIB_RUMTIMECONFIGURATION_INCLUDE_RUMTIME_CONFIGURATION_NODE_H_
+#endif // DEVICE_COMMON_LIB_CONFIGURATION_INCLUDE_CONFIGURATION_NODE_H_

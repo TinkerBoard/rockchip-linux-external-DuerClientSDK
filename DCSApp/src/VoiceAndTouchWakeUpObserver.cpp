@@ -32,12 +32,20 @@ static const std::string KEYWORD_NEXT_SONG = "下一首";
 static const std::string KEYWORD_PAUSE = "暂停";
 
 VoiceAndTouchWakeUpObserver::VoiceAndTouchWakeUpObserver() {
+    APP_INFO("VoiceAndTouchWakeUpObserver constructor");
 
 }
 
 void VoiceAndTouchWakeUpObserver::onKeyWordDetected(std::string keyword,
                                                     uint64_t beginIndex,
-                                                    uint64_t endIndex) {
+                                                    uint64_t endIndex,
+                                                    std::string requestId,
+                                                    int wake_dir) {
+    APP_INFO("VoiceAndTouchWakeUpObserver onKeyWordDetected:%s", keyword.c_str());
+    DeviceIoWrapper::getInstance()->setRecognizing(true);
+    wakeupTriggered(true, beginIndex, endIndex, keyword, requestId, wake_dir);
+
+#if 0
     if (endIndex != sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX &&
         beginIndex == sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX) {
         if (KEYWORD_XIAODUXIAODU == keyword) {
@@ -79,19 +87,40 @@ void VoiceAndTouchWakeUpObserver::onKeyWordDetected(std::string keyword,
             }
         }
     }
+#endif
 }
 
 void VoiceAndTouchWakeUpObserver::touchStartAsr() {
     APP_INFO("VoiceAndTouchWakeUpObserver touchStartAsr");
     wakeupTriggered(false);
-    APP_INFO("VoiceAndTouchWakeUpObserver touchStartAsr end");
 }
 
 void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
                                                   uint64_t beginIndex,
                                                   uint64_t endIndex,
-                                                  std::string keyword) {
+                                                  std::string keyword,
+                                                  std::string requestId,
+                                                  int wake_dir) {
+#if 1
+    //BDS SDK 不判断网络状态
+    SoundController::getInstance()->wakeUp();
+    DeviceIoWrapper::getInstance()->ledNetOff();
 
+    if (is_voice_wakeup) {
+        DeviceIoWrapper::getInstance()->setDirection(wake_dir);
+        DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
+        if (m_dcsSdk) {
+            m_dcsSdk->notifyOfWakeWord(endIndex, endIndex, keyword, requestId);
+        }
+    } else {
+        DeviceIoWrapper::getInstance()->setDirection(-1);
+        DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
+        if (m_dcsSdk) {
+          m_dcsSdk->startBDSSDKListen();
+        }
+    }
+    return;
+#endif
     if ((DUERLINK_NETWORK_SUCCEEDED == DuerLinkWrapper::getInstance()->getNetworkStatus()) ||
         (DUERLINK_NETWORK_CONFIG_SUCCEEDED == DuerLinkWrapper::getInstance()->getNetworkStatus()) ||
         (DUERLINK_NETWORK_RECOVERY_SUCCEEDED == DuerLinkWrapper::getInstance()->getNetworkStatus())) {
@@ -103,12 +132,13 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
         if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_CONNECT_SUCCEED) {
             SoundController::getInstance()->wakeUp();
             DeviceIoWrapper::getInstance()->ledNetOff();
+
             if (is_voice_wakeup) {
                 int target_dir = DeviceIoWrapper::getInstance()->fetchWakeupDirection();
                 DeviceIoWrapper::getInstance()->setDirection(target_dir);
                 DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
                 if (m_dcsSdk) {
-                    m_dcsSdk->notifyOfWakeWord(endIndex - 8000, endIndex, keyword);
+                    m_dcsSdk->notifyOfWakeWord(endIndex - 8000, endIndex, keyword, requestId);
                 }
             } else {
                 DeviceIoWrapper::getInstance()->setDirection(-1);
@@ -117,20 +147,32 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
                     m_dcsSdk->notifyOfTapToTalk();
                 }
             }
-        } else if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_AUTH_FAILED) {
-            DeviceIoWrapper::getInstance()->setRecognizing(false);
-            SoundController::getInstance()->accountUnbound(nullptr);
-        } else if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_CONNECT_FAILED){
-            DeviceIoWrapper::getInstance()->setRecognizing(false);
-            SoundController::getInstance()->serverConnectFailed();
-        } else if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_CONNECTING){
-            DeviceIoWrapper::getInstance()->setRecognizing(false);
-            SoundController::getInstance()->serverConnecting();
+        } else {
+            //网络故障状态下唤醒打点log
+            if (is_voice_wakeup) {
+                APP_INFO("Network unconnected when Voice wakeupd:%s", keyword.c_str());
+            }
+            
+            if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_AUTH_FAILED) {
+                DeviceIoWrapper::getInstance()->setRecognizing(false);
+                SoundController::getInstance()->accountUnbound(nullptr);
+            } else if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_CONNECT_FAILED) {
+                DeviceIoWrapper::getInstance()->setRecognizing(false);
+                SoundController::getInstance()->serverConnectFailed();
+            } else if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_CONNECTING) {
+                DeviceIoWrapper::getInstance()->setRecognizing(false);
+                SoundController::getInstance()->serverConnecting();
+            }
+
         }
 
         DuerLinkWrapper::getInstance()->verifyNetworkStatus(true);
-
     } else {
+        //网络故障状态下唤醒打点log
+        if (is_voice_wakeup) {
+            APP_INFO("Network unconnected when Voice wakeupd:%s", keyword.c_str());
+        }
+
         DeviceIoWrapper::getInstance()->setRecognizing(false);
         if (DeviceIoWrapper::getInstance()->isAlertRing()) {
             DeviceIoWrapper::getInstance()->closeLocalActiveAlert();

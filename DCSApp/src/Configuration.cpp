@@ -104,6 +104,9 @@ bool Configuration::readConfig() {
             return false;
         }
     }
+
+    bool isRecreateAppConfigFile = false;
+
     if (access(m_appConfigFile.c_str(), F_OK) == 0) {
         std::ifstream jsonFile;
         jsonFile.open(m_appConfigFile.c_str());
@@ -112,96 +115,103 @@ bool Configuration::readConfig() {
         rapidjson::Document readDocument;
         readDocument.Parse<0>(jsonContent.c_str());
 
-        if (readDocument.HasMember("record_audio_path")) {
-            m_recordAudioPath = readDocument["record_audio_path"].GetString();
+        if (readDocument.HasParseError()) {
+            isRecreateAppConfigFile = true;
         } else {
-            m_recordAudioPath = "";
-        }
+            if (readDocument.HasMember("record_audio_path")) {
+                m_recordAudioPath = readDocument["record_audio_path"].GetString();
+            } else {
+                m_recordAudioPath = "";
+            }
 
-        if (readDocument.HasMember("ssid_prefix")) {
-            m_ssidPrefix = readDocument["ssid_prefix"].GetString();
-        } else {
-            m_ssidPrefix = "DuerOS_";
-        }
+            if (readDocument.HasMember("ssid_prefix")) {
+                m_ssidPrefix = readDocument["ssid_prefix"].GetString();
+            } else {
+                m_ssidPrefix = "DuerOS_";
+            }
 
-        if (readDocument.HasMember("info_playback_device")) {
-            m_infoPlaybackDevice = readDocument["info_playback_device"].GetString();
-            if (m_infoPlaybackDevice.empty()) {
+            if (readDocument.HasMember("info_playback_device")) {
+                m_infoPlaybackDevice = readDocument["info_playback_device"].GetString();
+                if (m_infoPlaybackDevice.empty()) {
+                    m_infoPlaybackDevice = INFO_DEFAULT_PLAYBACK_DEVICE;
+                }
+            } else {
                 m_infoPlaybackDevice = INFO_DEFAULT_PLAYBACK_DEVICE;
             }
-        } else {
-            m_infoPlaybackDevice = INFO_DEFAULT_PLAYBACK_DEVICE;
-        }
 
-        if (readDocument.HasMember("tts_playback_device")) {
-            m_ttsPlaybackDevice = readDocument["tts_playback_device"].GetString();
-            if (m_ttsPlaybackDevice.empty()) {
+            if (readDocument.HasMember("tts_playback_device")) {
+                m_ttsPlaybackDevice = readDocument["tts_playback_device"].GetString();
+                if (m_ttsPlaybackDevice.empty()) {
+                    m_ttsPlaybackDevice = TTS_DEFAULT_PLAYBACK_DEVICE;
+                }
+            } else {
                 m_ttsPlaybackDevice = TTS_DEFAULT_PLAYBACK_DEVICE;
             }
-        } else {
-            m_ttsPlaybackDevice = TTS_DEFAULT_PLAYBACK_DEVICE;
-        }
 
-        if (readDocument.HasMember("music_playback_device")) {
-            m_musicPlaybackDevice = readDocument["music_playback_device"].GetString();
-            if (m_musicPlaybackDevice.empty()) {
+            if (readDocument.HasMember("music_playback_device")) {
+                m_musicPlaybackDevice = readDocument["music_playback_device"].GetString();
+                if (m_musicPlaybackDevice.empty()) {
+                    m_musicPlaybackDevice = MUSIC_DEFAULT_PLAYBACK_DEVICE;
+                }
+            } else {
                 m_musicPlaybackDevice = MUSIC_DEFAULT_PLAYBACK_DEVICE;
             }
-        } else {
-            m_musicPlaybackDevice = MUSIC_DEFAULT_PLAYBACK_DEVICE;
-        }
 
-        if (readDocument.HasMember("alert_playback_device")) {
-            m_alertPlaybackDevice = readDocument["alert_playback_device"].GetString();
-            if (m_alertPlaybackDevice.empty()) {
+            if (readDocument.HasMember("alert_playback_device")) {
+                m_alertPlaybackDevice = readDocument["alert_playback_device"].GetString();
+                if (m_alertPlaybackDevice.empty()) {
+                    m_alertPlaybackDevice = ALERT_DEFAULT_PLAYBACK_DEVICE;
+                }
+            } else {
                 m_alertPlaybackDevice = ALERT_DEFAULT_PLAYBACK_DEVICE;
             }
-        } else {
-            m_alertPlaybackDevice = ALERT_DEFAULT_PLAYBACK_DEVICE;
-        }
 
-        if (readDocument.HasMember("rapid_playback_device")) {
-            m_rapidPlaybackDevice = readDocument["rapid_playback_device"].GetString();
-            if (m_rapidPlaybackDevice.empty()) {
+            if (readDocument.HasMember("rapid_playback_device")) {
+                m_rapidPlaybackDevice = readDocument["rapid_playback_device"].GetString();
+                if (m_rapidPlaybackDevice.empty()) {
+                    m_rapidPlaybackDevice = RAPID_DEFAULT_PLAYBACK_DEVICE;
+                }
+            } else {
                 m_rapidPlaybackDevice = RAPID_DEFAULT_PLAYBACK_DEVICE;
             }
-        } else {
-            m_rapidPlaybackDevice = RAPID_DEFAULT_PLAYBACK_DEVICE;
-        }
 
-        if (readDocument.HasMember("natts_playback_device")) {
-            m_nattsPlaybackDevice = readDocument["natts_playback_device"].GetString();
-            if (m_nattsPlaybackDevice.empty()) {
+            if (readDocument.HasMember("natts_playback_device")) {
+                m_nattsPlaybackDevice = readDocument["natts_playback_device"].GetString();
+                if (m_nattsPlaybackDevice.empty()) {
+                    m_nattsPlaybackDevice = NATTS_DEFAULT_PLAYBACK_DEVICE;
+                }
+            } else {
                 m_nattsPlaybackDevice = NATTS_DEFAULT_PLAYBACK_DEVICE;
             }
-        } else {
-            m_nattsPlaybackDevice = NATTS_DEFAULT_PLAYBACK_DEVICE;
-        }
 
-        rapidjson::Document document;
-        document.SetObject();
-        addPairToDoc(document, "record_audio_path", m_recordAudioPath);
-        addPairToDoc(document, "ssid_prefix", m_ssidPrefix);
-        addPairToDoc(document, "info_playback_device", m_infoPlaybackDevice);
-        addPairToDoc(document, "tts_playback_device", m_ttsPlaybackDevice);
-        addPairToDoc(document, "music_playback_device", m_musicPlaybackDevice);
-        addPairToDoc(document, "alert_playback_device", m_alertPlaybackDevice);
-        addPairToDoc(document, "rapid_playback_device", m_rapidPlaybackDevice);
-        addPairToDoc(document, "natts_playback_device", m_nattsPlaybackDevice);
+            rapidjson::Document document;
+            document.SetObject();
+            addPairToDoc(document, "record_audio_path", m_recordAudioPath);
+            addPairToDoc(document, "ssid_prefix", m_ssidPrefix);
+            addPairToDoc(document, "info_playback_device", m_infoPlaybackDevice);
+            addPairToDoc(document, "tts_playback_device", m_ttsPlaybackDevice);
+            addPairToDoc(document, "music_playback_device", m_musicPlaybackDevice);
+            addPairToDoc(document, "alert_playback_device", m_alertPlaybackDevice);
+            addPairToDoc(document, "rapid_playback_device", m_rapidPlaybackDevice);
+            addPairToDoc(document, "natts_playback_device", m_nattsPlaybackDevice);
 
-        rapidjson::StringBuffer buffer;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-        document.Accept(writer);
-        const char* str = buffer.GetString();
-        FILE *fp = fopen(m_appConfigFile.c_str() , "w");
-        if (!fp) {
-            return false;
+            rapidjson::StringBuffer buffer;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+            document.Accept(writer);
+            const char* str = buffer.GetString();
+            FILE *fp = fopen(m_appConfigFile.c_str(), "w");
+            if (!fp) {
+                return false;
+            }
+            fwrite(str, sizeof(char), strlen(str), fp);
+            fclose(fp);
+            sync();
         }
-        fwrite(str, sizeof(char), strlen(str), fp);
-        fclose(fp);
-        sync();
     } else {
+        isRecreateAppConfigFile = true;
+    }
 
+    if (isRecreateAppConfigFile) {
         //配置文件自动生成时，根据不同设备自动填充，也可以手动修改配置文件，进行设置
 #if (defined Hodor)
         m_ssidPrefix = NETWORK_HODOR_SSID_PREFIX;
@@ -253,6 +263,9 @@ bool Configuration::readConfig() {
             return false;
         }
     }
+
+    bool isRecreateDuerosConfigFile = false;
+
     if (access(m_duerosConfigFile.c_str(), F_OK) == 0) {
         std::ifstream jsonFile;
         jsonFile.open(m_duerosConfigFile.c_str());
@@ -261,10 +274,13 @@ bool Configuration::readConfig() {
         rapidjson::Document readDocument;
         readDocument.Parse<0>(jsonContent.c_str());
 
+        if (readDocument.HasParseError()) {
+            isRecreateDuerosConfigFile = true;
+        } else {
 #if (defined RaspberryPi) || (defined Hodor) || (defined Kuke) || (defined Dot) || (defined Box86)
-        m_deviceId = DeviceIoWrapper::getInstance()->getDeviceId();
+            m_deviceId = DeviceIoWrapper::getInstance()->getDeviceId();
 #else
-        if (readDocument.HasMember("device_id")) {
+            if (readDocument.HasMember("device_id")) {
             m_deviceId = readDocument["device_id"].GetString();
             if (m_deviceId.empty()) {
                 m_deviceId = deviceCommonLib::deviceTools::randomUID();
@@ -274,52 +290,57 @@ bool Configuration::readConfig() {
         }
 #endif
 
-        if (readDocument.HasMember("com_volume")) {
-            std::string volumeStr = readDocument["com_volume"].GetString();
-            if (volumeStr.empty()) {
+            if (readDocument.HasMember("com_volume")) {
+                std::string volumeStr = readDocument["com_volume"].GetString();
+                if (volumeStr.empty()) {
+                    m_commonVolume = DEFAULT_COMMON_VOLUME;
+                } else {
+                    std::stringstream stream(volumeStr);
+                    stream >> m_commonVolume;
+                }
+            } else {
                 m_commonVolume = DEFAULT_COMMON_VOLUME;
-            } else {
-                std::stringstream stream(volumeStr);
-                stream >> m_commonVolume;
             }
-        } else {
-            m_commonVolume = DEFAULT_COMMON_VOLUME;
-        }
 
-        if (readDocument.HasMember("alert_volume")) {
-            std::string volumeStr = readDocument["alert_volume"].GetString();
-            if (volumeStr.empty()) {
+            if (readDocument.HasMember("alert_volume")) {
+                std::string volumeStr = readDocument["alert_volume"].GetString();
+                if (volumeStr.empty()) {
+                    m_alertsVolume = DEFAULT_ALERTS_VOLUME;
+                } else {
+                    std::stringstream stream(volumeStr);
+                    stream >> m_alertsVolume;
+                }
+            } else {
                 m_alertsVolume = DEFAULT_ALERTS_VOLUME;
-            } else {
-                std::stringstream stream(volumeStr);
-                stream >> m_alertsVolume;
             }
-        } else {
-            m_alertsVolume = DEFAULT_ALERTS_VOLUME;
-        }
 
-        rapidjson::Document document;
-        document.SetObject();
-        addPairToDoc(document, "device_id", m_deviceId);
-        std::stringstream streamCmv;
-        streamCmv << m_commonVolume;
-        std::stringstream streamAlv;
-        streamAlv << m_alertsVolume;
-        addPairToDoc(document, "com_volume", streamCmv.str());
-        addPairToDoc(document, "alert_volume", streamAlv.str());
+            rapidjson::Document document;
+            document.SetObject();
+            addPairToDoc(document, "device_id", m_deviceId);
+            std::stringstream streamCmv;
+            streamCmv << m_commonVolume;
+            std::stringstream streamAlv;
+            streamAlv << m_alertsVolume;
+            addPairToDoc(document, "com_volume", streamCmv.str());
+            addPairToDoc(document, "alert_volume", streamAlv.str());
 
-        rapidjson::StringBuffer buffer;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-        document.Accept(writer);
-        const char* str = buffer.GetString();
-        FILE *fp = fopen(m_duerosConfigFile.c_str() , "w");
-        if (!fp) {
-            return false;
+            rapidjson::StringBuffer buffer;
+            rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+            document.Accept(writer);
+            const char* str = buffer.GetString();
+            FILE *fp = fopen(m_duerosConfigFile.c_str(), "w");
+            if (!fp) {
+                return false;
+            }
+            fwrite(str, sizeof(char), strlen(str), fp);
+            fclose(fp);
+            sync();
         }
-        fwrite(str, sizeof(char), strlen(str), fp);
-        fclose(fp);
-        sync();
     } else {
+        isRecreateDuerosConfigFile = true;
+    }
+
+    if (isRecreateDuerosConfigFile) {
 #if (defined RaspberryPi) || (defined Hodor) || (defined Kuke) || (defined Dot) || (defined Box86)
         m_deviceId = DeviceIoWrapper::getInstance()->getDeviceId();
 #else

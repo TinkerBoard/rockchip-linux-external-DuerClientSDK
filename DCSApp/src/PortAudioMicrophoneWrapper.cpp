@@ -63,7 +63,6 @@ PortAudioMicrophoneWrapper::~PortAudioMicrophoneWrapper() {
 void PortAudioMicrophoneWrapper::recordDataInputCallback(char* buffer, long unsigned int size, void *userdata) {
     PortAudioMicrophoneWrapper* wrapper = static_cast<PortAudioMicrophoneWrapper*>(userdata);
     if (wrapper->running == false) {
-        APP_ERROR("Record not started");
         return;
     }
     ssize_t returnCode = 1;

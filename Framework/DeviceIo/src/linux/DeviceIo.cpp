@@ -52,7 +52,7 @@ static int mixer_init(const char* card, const char* elem) {
 #ifdef MTK8516
     const char* _elem = elem ? elem : "TAS5760";
 #else
-    const char* _elem = elem ? elem : "Master";
+    const char* _elem = elem ? elem : "Playback";
 #endif
 
     // open mixer

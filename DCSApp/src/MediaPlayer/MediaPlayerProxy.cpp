@@ -14,12 +14,14 @@
  *  limitations under the License.
  */
 
+#include <DeviceTools/TimeUtils.h>
 #include "DCSApp/DeviceIoWrapper.h"
 #include "DCSApp/SoundController.h"
 #include "DCSApp/DuerLinkWrapper.h"
 #include "DCSApp/ActivityMonitorSingleton.h"
 #include "MediaPlayer/MediaPlayerProxy.h"
 #include "LoggerUtils/DcsSdkLogger.h"
+#include <malloc.h>
 
 namespace duerOSDcsApp {
 namespace mediaPlayer {
@@ -51,10 +53,8 @@ MediaPlayerProxy::MediaPlayerProxy(const std::string& audio_device) : m_offset_m
 
 MediaPlayerProxy::~MediaPlayerProxy() {
     APP_INFO("~MediaPlayerProxy");
-    if (m_audio_player) {
-        delete m_audio_player;
-        m_audio_player = nullptr;
-    }
+    delete m_audio_player;
+    m_audio_player = nullptr;
 }
 
 MediaPlayerStatus MediaPlayerProxy::setSource(
@@ -194,11 +194,7 @@ void MediaPlayerProxy::playbackStreamUnreach() {
 
 bool MediaPlayerProxy::queryIsSeekable(bool* isSeekable) {
     if (m_audio_player) {
-        if (m_audio_player->getDuration() > 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return (m_audio_player->getDuration() > 0);
     } else {
         return false;
     }
@@ -227,6 +223,8 @@ void MediaPlayerProxy::executePlaybackPause() {
     if (m_playerObserver) {
         m_playerObserver->onPlaybackPaused();
     }
+    ///@
+   /// malloc_trim(0);
 }
 
 void MediaPlayerProxy::executePlaybackResume() {
@@ -246,12 +244,16 @@ void MediaPlayerProxy::executePlaybackFinish() {
         m_playerObserver->onPlaybackFinished();
     }
     ActivityMonitorSingleton::getInstance()->updateActiveTimestamp();
+    ///@
+    ///malloc_trim(0);
 }
 
 void MediaPlayerProxy::executePlaybackError() {
     if (m_playerObserver) {
         m_playerObserver->onPlaybackError(duerOSDcsSDK::sdkInterfaces::ErrorType::MEDIA_ERROR_INVALID_REQUEST, "404");
     }
+    ///@
+    ///malloc_trim(0);
 }
 
 void MediaPlayerProxy::executePlaybackOnBufferUnderrun(PlayProgressInfo playProgressInfo) {
@@ -266,7 +268,7 @@ void MediaPlayerProxy::executePlaybackOnBufferUnderrun(PlayProgressInfo playProg
     }
 
     if (playProgressInfo == PlayProgressInfo::DURING_PLAY) {
-        unsigned int currentTime = TimerUtil::currentTimeMs();
+        unsigned int currentTime = deviceCommonLib::deviceTools::currentTimeMs();
         if (currentTime - m_latestNetworkStatusTimestamp < NETWORK_SLOW_REPORT_INTERVAL_MS) {
             return;
         }

@@ -29,7 +29,7 @@ class AlsaController {
 public:
     AlsaController(const std::string &audio_dev);
 
-    ~AlsaController();
+    ~AlsaController() = default;
 
     bool init(unsigned int rate, unsigned int channels);
 

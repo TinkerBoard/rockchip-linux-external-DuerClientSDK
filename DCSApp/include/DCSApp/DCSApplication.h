@@ -23,6 +23,9 @@
 #include "DuerLinkWrapper.h"
 #include "SystemUpdateRevWrapper.h"
 #include "DCSKeyHandler.h"
+#ifdef Build_CrabSdk
+#include "crab_sdk.h"
+#endif
 
 namespace duerOSDcsApp {
 namespace application {
@@ -89,6 +92,17 @@ private:
      * \endif
      */
     void duerlinkNotifyReceivedData(const std::string& jsonPackageData, int sessionId = 0) override;
+
+    /**
+     * \if english
+     *     @brief received bduss from DuerLink.
+     *     @param[in] bdussValue received bduss.
+     * \else
+     *     @brief 从DuerLink接收bduss。
+     *     @param[in] bdussValue 接收到bduss。
+     * \endif
+     */
+    void duerlink_notify_received_bduss(const std::string& bdussValue) override;
 
     /**
      * \if english

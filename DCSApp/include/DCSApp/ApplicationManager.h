@@ -297,6 +297,19 @@ public:
      */
     void volumeChanged(int volume, bool muted);
 
+    bool setStartDebugMode();
+
+    bool setStopDebugMode();
+
+    /**
+     * Inform the server the debugger mode has started.
+     */
+    void debugStarted();
+
+    /**
+    * Inform the server the debugger mode has stoped.
+    */
+    void debugStoped();
     /**
      * DCS perform close local active alert
      */

@@ -19,13 +19,15 @@
 namespace duerOSDcsApp {
 namespace mediaPlayer {
 
-#ifdef MTK8516
+/*#ifdef MTK8516
 #define ALSA_MAX_BUFFER_TIME 500000
 #else
 #define ALSA_MAX_BUFFER_TIME 80000
-#endif
+#endif*/
 
-AlsaController::AlsaController(const std::string &audio_dev) : m_pcmHandle(NULL),
+#define ALSA_MAX_BUFFER_TIME 500000
+
+AlsaController::AlsaController(const std::string &audio_dev) : m_pcmHandle(nullptr),
                                                                m_alsaCanPause(false),
                                                                m_abortFlag(false),
                                                                m_chunkBytes(0) {
@@ -33,19 +35,13 @@ AlsaController::AlsaController(const std::string &audio_dev) : m_pcmHandle(NULL)
     m_pcmDevice = audio_dev;
 }
 
-AlsaController::~AlsaController() {
-}
-
 bool AlsaController::openDevice() {
     int ret = snd_pcm_open(&m_pcmHandle, m_pcmDevice.c_str(), SND_PCM_STREAM_PLAYBACK, 0);
-    if (ret < 0) {
-        return false;
-    }
-    return true;
+    return ret >= 0;
 }
 
 bool AlsaController::setParams(unsigned int rate, unsigned int channels) {
-    snd_pcm_hw_params_t *params = NULL;
+    snd_pcm_hw_params_t *params = nullptr;
     uint32_t buffer_time = 0;
     uint32_t period_time = 0;
     int ret = 0;
@@ -67,21 +63,21 @@ bool AlsaController::setParams(unsigned int rate, unsigned int channels) {
     if (ret < 0) {
         return false;
     }
-    ret = snd_pcm_hw_params_set_rate_near(m_pcmHandle, params, &rate, 0);
+    ret = snd_pcm_hw_params_set_rate_near(m_pcmHandle, params, &rate, nullptr);
     if (ret < 0) {
         return false;
     }
-    ret = snd_pcm_hw_params_get_buffer_time_max(params, &buffer_time, 0);
+    ret = snd_pcm_hw_params_get_buffer_time_max(params, &buffer_time, nullptr);
     if (ret < 0) {
         return false;
     }
     buffer_time = buffer_time > ALSA_MAX_BUFFER_TIME ? ALSA_MAX_BUFFER_TIME : buffer_time;
     period_time = buffer_time / 4;
-    ret = snd_pcm_hw_params_set_buffer_time_near(m_pcmHandle, params, &buffer_time, 0);
+    ret = snd_pcm_hw_params_set_buffer_time_near(m_pcmHandle, params, &buffer_time, nullptr);
     if (ret < 0) {
         return false;
     }
-    ret = snd_pcm_hw_params_set_period_time_near(m_pcmHandle, params, &period_time, 0);
+    ret = snd_pcm_hw_params_set_period_time_near(m_pcmHandle, params, &period_time, nullptr);
     if (ret < 0) {
         return false;
     }
@@ -94,7 +90,7 @@ bool AlsaController::setParams(unsigned int rate, unsigned int channels) {
 
     snd_pcm_uframes_t chunk_size = 0;
     snd_pcm_uframes_t buffer_size = 0;
-    ret = snd_pcm_hw_params_get_period_size(params, &chunk_size, 0);
+    ret = snd_pcm_hw_params_get_period_size(params, &chunk_size, nullptr);
     if (ret < 0) {
         return false;
     }
@@ -110,18 +106,15 @@ bool AlsaController::init(unsigned int rate, unsigned int channels) {
     if (!openDevice()) {
         return false;
     }
-    if (!setParams(rate, channels)) {
-        return false;
-    }
-    return true;
+    return setParams(rate, channels);
 }
 
 bool AlsaController::isAccessable() const {
-    return m_pcmHandle != NULL;
+    return m_pcmHandle != nullptr;
 }
 
 bool AlsaController::alsaPrepare() {
-    if (m_pcmHandle != NULL) {
+    if (m_pcmHandle != nullptr) {
         snd_pcm_prepare(m_pcmHandle);
         m_abortFlag = false;
         return true;
@@ -166,7 +159,7 @@ bool AlsaController::alsaResume() {
 }
 
 bool AlsaController::aslaAbort() {
-    if (m_pcmHandle != NULL) {
+    if (m_pcmHandle != nullptr) {
         m_abortFlag = true;
         snd_pcm_abort(m_pcmHandle);
         return true;
@@ -177,7 +170,7 @@ bool AlsaController::aslaAbort() {
 void AlsaController::writeStream(unsigned int channels,
                                   const void *buffer,
                                   unsigned long buff_size) {
-    if (m_abortFlag || m_pcmHandle == NULL) {
+    if (m_abortFlag || m_pcmHandle == nullptr) {
         return;
     }
 
@@ -192,7 +185,7 @@ void AlsaController::writeStream(unsigned int channels,
 }
 
 bool AlsaController::alsaClear() {
-    if (NULL != m_pcmHandle) {
+    if (nullptr != m_pcmHandle) {
         snd_pcm_drop(m_pcmHandle);
         return true;
     }
@@ -200,12 +193,12 @@ bool AlsaController::alsaClear() {
 }
 
 bool AlsaController::alsaClose() {
-    if (NULL == m_pcmHandle) {
+    if (nullptr == m_pcmHandle) {
         return false;
     }
     snd_pcm_drop(m_pcmHandle);
     snd_pcm_close(m_pcmHandle);
-    m_pcmHandle = NULL;
+    m_pcmHandle = nullptr;
     return true;
 }
 

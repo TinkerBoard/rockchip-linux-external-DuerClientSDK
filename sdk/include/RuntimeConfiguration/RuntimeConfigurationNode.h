@@ -39,6 +39,7 @@ public:
      * \endif
      */
     int get_array_size();
+
     /**
      * \if english
      *  @brief construct the configuration node
@@ -59,16 +60,21 @@ public:
      *  @param tmutex1 mutex pointer which used by RuntimeConfigurationNode
      *  @param fileName1 file name that contains json string
      *  @param doc1 rapidjson::Document pointer
+     *  @param[in] secretKey key used to encrypt
+     *  @param[in] keyLen key length
      * \else
      *  @brief 构造configuration node
      *  @param object1 rapidjson::Value 指针
      *  @param tmutex1 RuntimeConfigurationNode使用的mutex指针
      *  @param fileName1 包含json字符串的文件名
      *  @param doc1 rapidjson::Document 指针
+     *  @param[in] secretKey 加密用的key
+     *  @param[in] keyLen key的长度
      * \endif
      */
     RuntimeConfigurationNode(rapidjson::Value *object1, std::mutex *tmutex1,
-                             std::string fileName1, rapidjson::Document *doc1);
+                             const std::string& fileName1, rapidjson::Document *doc1,
+                             unsigned char* secretKey, int keyLen);
 
     /**
      *\if english
@@ -166,6 +172,7 @@ public:
      *\endif
      */
     bool appendObject(const std::string& key, bool saveFlag = true);
+
     /**
      *\if english
      * @brief  append json array string.
@@ -180,6 +187,7 @@ public:
      *\endif
      */
     bool appendArray(const std::string& jsonArrayStr, bool saveFlag = true);
+
     /**
      *\if english
      * @brief  append json object to  document
@@ -197,7 +205,7 @@ public:
      * @return 添加成功或失败
      *\endif
      */
-    bool appendObjectToDocument(const std::string arrayKey, const std::string jsonKey, const std::string &jsonStr,
+    bool appendObjectToDocument(const std::string& arrayKey, const std::string& jsonKey, const std::string &jsonStr,
                 bool saveFlag);
 
     /**
@@ -218,7 +226,6 @@ public:
      *\endif
      */
     bool getValueByIndex(std::string key_name, std::string key_value, std::string filed_name, std::string& filed_value);
-
 
     /**
      *\if english
@@ -245,7 +252,6 @@ public:
      * @return RuntimeCongigurationNode
      *\endif
      */
-
     RuntimeConfigurationNode operator[](const int & arrayIndex) const;
 
 
@@ -266,8 +272,8 @@ public:
      * \endif
      */
     std::vector <rapidjson::Document*> _doc_vec;
-private:
 
+private:
     /**
      * \if english
      *  @brief initial the configuration node
@@ -279,7 +285,7 @@ private:
      *  @return 初始化成功或失败
      * \endif
      */
-    friend bool initialize(RuntimeConfigurationNode node);
+    friend bool initialize(RuntimeConfigurationNode& node);
 
     /**
      * \if english
@@ -292,11 +298,10 @@ private:
      *  @return 卸载初始化成功或失败
      * \endif
      */
-    friend void uninitialize(RuntimeConfigurationNode node);
+    friend void uninitialize(RuntimeConfigurationNode& node);
 };
 
 }  // namespace configuration
 }  // namespace deviceCommonLib
 
-
-#endif //COMMONLIB_RUNTIMECONFIGURATIONNODE_H
+#endif // DEVICE_COMMON_LIB_RUMTIMECONFIGURATION_INCLUDE_RUMTIME_CONFIGURATIONNODE_H_

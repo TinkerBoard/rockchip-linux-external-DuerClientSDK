@@ -118,7 +118,11 @@ void BlueToothPlayerProxy::btStartPlay() {
         m_playerObserver->setLocalMediaPlayerPlayInfo(playInfo);
     }
     if (m_dcsSdk) {
+#if 0
+#ifdef KITTAI_KEY_WORD_DETECTOR
         m_dcsSdk->enterPlayMusicScene();
+#endif
+#endif
     }
 }
 
@@ -141,7 +145,12 @@ void BlueToothPlayerProxy::btStopPlay() {
         m_playerObserver->setLocalMediaPlayerPlayInfo(playInfo);
     }
     if (m_dcsSdk) {
+#if 0
+#ifdef KITTAI_KEY_WORD_DETECTOR
         m_dcsSdk->exitPlayMusicScene();
+#endif
+#endif
+
     }
 }
 
@@ -162,7 +171,11 @@ void BlueToothPlayerProxy::btDisconnect() {
         m_playerObserver->setLocalMediaPlayerPlayInfo(playInfo);
     }
     if (m_dcsSdk) {
+    #if 0
+#ifdef KITTAI_KEY_WORD_DETECTOR
         m_dcsSdk->exitPlayMusicScene();
+#endif
+#endif
     }
 }
 
@@ -183,7 +196,11 @@ void BlueToothPlayerProxy::btPowerOff() {
         m_playerObserver->setLocalMediaPlayerPlayInfo(playInfo);
     }
     if (m_dcsSdk) {
+#if 0
+#ifdef KITTAI_KEY_WORD_DETECTOR
         m_dcsSdk->exitPlayMusicScene();
+#endif
+#endif
     }
 }
 void BlueToothPlayerProxy::setDcsSdk(

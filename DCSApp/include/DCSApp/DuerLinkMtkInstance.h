@@ -95,12 +95,17 @@ public:
 
     void init_config_network_parameter(duerLink::platform_type speaker_type,
                                        duerLink::auto_config_network_type autoType,
-                                       std::string devicedID,
-                                       std::string interface);
+                                       const std::string& devicedID,
+                                       const std::string& interface,
+                                       const std::string& bdussfile,
+                                       const std::string& clientId);
     void init_softAp_env_cb();
     void init_ble_env_cb();
     void init_wifi_connect_cb();
-    void init_discovery_parameter(std::string devicedID, std::string appId, std::string interface);
+    void init_discovery_parameter(const std::string& devicedID,
+                                  const std::string& appId,
+                                  const std::string& interface,
+                                  const std::string& bdussfile);
 
     bool set_wpa_conf(bool change_file);
 

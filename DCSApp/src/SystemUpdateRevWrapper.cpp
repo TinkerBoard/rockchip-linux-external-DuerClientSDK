@@ -16,6 +16,7 @@
 
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <sys/time.h>
 #include <cerrno>
 #include <cstring>
 #include <rapidjson/document.h>
@@ -54,7 +55,6 @@ enum SdkMsgCase {
     MSG_CASE_UPDATE_SUCCESS,
     MSG_CASE_GET_STATUS,
 };
-
 
 std::unique_ptr<SystemUpdateRevWrapper> SystemUpdateRevWrapper::create() {
     std::unique_ptr<SystemUpdateRevWrapper> systemUpdateRevWrapper(new SystemUpdateRevWrapper());

@@ -41,9 +41,12 @@ static const std::string PATH_TO_CONFIG = "/data/resources/config.json";
 #ifdef MTK8516
 /// The runtime config path of DCSSDK
 static const std::string PATH_TO_RUNTIME_CONFIG = "/data/duer/runtime.json";
+
+static const std::string PATH_TO_BDUSS_FILE = "/data/duer/bduss.txt";
 #else
 /// The runtime config path of DCSSDK
 static const std::string PATH_TO_RUNTIME_CONFIG = "/data/cfg/runtime.json";
+static const std::string PATH_TO_BDUSS_FILE = "/data/cfg/bduss.txt";
 #endif
 
 std::unique_ptr<DCSApplication> DCSApplication::create() {
@@ -133,7 +136,6 @@ bool DCSApplication::initialize() {
     parameters.setConnectionObservers(applicationManager);
     parameters.setApplicationImplementation(applicationManager);
     parameters.setLocalMediaPlayer(blueToothPlayer);
-    parameters.setEnableSdkWakeup(true);
 
     // This observer is notified any time a keyword is detected and notifies the DCSSDK to start recognizing.
     auto voiceAndTouchWakeUpObserver = std::make_shared<VoiceAndTouchWakeUpObserver>();
@@ -148,7 +150,7 @@ bool DCSApplication::initialize() {
         APP_ERROR("Failed to create default SDK handler!");
         return false;
     }
-
+#if 0
     std::shared_ptr<PortAudioMicrophoneWrapper> micWrapper = PortAudioMicrophoneWrapper::create(m_dcsSdk);
     if (!micWrapper) {
         APP_ERROR("Failed to create PortAudioMicrophoneWrapper!");
@@ -157,6 +159,8 @@ bool DCSApplication::initialize() {
     micWrapper->setRecordDataInputCallback(recordDataInputCallback);
 
     applicationManager->setMicrophoneWrapper(micWrapper);
+#endif
+
     applicationManager->setDcsSdk(m_dcsSdk);
     blueToothPlayer->setDcsSdk(m_dcsSdk);
 
@@ -178,8 +182,8 @@ bool DCSApplication::initialize() {
         DeviceIoWrapper::getInstance()->setMute(true);
     }
 
-#if 1
-    DuerLinkWrapper::getInstance()->initDuerLink();
+#if 0 
+    DuerLinkWrapper::getInstance()->initDuerLink(PATH_TO_BDUSS_FILE, m_dcsSdk->getClientId());
 
     DuerLinkWrapper::getInstance()->startNetworkRecovery();
 
@@ -195,7 +199,7 @@ bool DCSApplication::initialize() {
     m_dcsSdk->notifyNetworkReady(true, "testWifi");
 #endif
 
-    DuerLinkWrapper::getInstance()->startDiscoverAndBound(m_dcsSdk->getClientId());
+    DuerLinkWrapper::getInstance()->startDiscoverAndBound(m_dcsSdk->getClientId(), PATH_TO_BDUSS_FILE);
 
     m_systemUpdateRevWrapper = SystemUpdateRevWrapper::create();
 
@@ -214,6 +218,14 @@ void DCSApplication::networkReady() {
     if (m_dcsSdk) {
         m_dcsSdk->notifyNetworkReady(DuerLinkWrapper::getInstance()->isFromConfigNetwork(), DeviceIoWrapper::getInstance()->getWifiBssid());
     }
+
+#ifdef Build_CrabSdk
+    /**
+     * 网络连接成功，调用该接口上传上次崩溃转存的Crash文件
+     */
+    APP_INFO("crab upload crash dump file");
+    baidu_crab_sdk::CrabSDK::upload_crash_async();
+#endif
 }
 
 void DCSApplication::duerlinkNotifyReceivedData(const std::string& jsonPackageData, int sessionId) {
@@ -223,6 +235,12 @@ void DCSApplication::duerlinkNotifyReceivedData(const std::string& jsonPackageDa
         if (m_dcsSdk) {
             m_dcsSdk->consumeMessage(jsonPackageData);
         }
+    }
+}
+
+void DCSApplication::duerlink_notify_received_bduss(const std::string& bdussValue) {
+    if (m_dcsSdk) {
+        m_dcsSdk->setBDUSS(bdussValue);
     }
 }
 

@@ -121,6 +121,24 @@ public:
 
     /**
      * \if english
+     *     @brief Inform the server the debugger mode has started.
+     * \else
+     *     @brief 通知SDK音箱启动debug模式。
+     * \endif
+     */
+    void debugStarted();
+
+    /**
+     * \if english
+     *     @brief Inform the server the debugger mode has stoped.
+     * \else
+     *     @brief 通知SDK音箱退出debug模式。
+     * \endif
+     */
+    void debugStoped();
+
+    /**
+     * \if english
      *     @brief Initiate a playback play event to SDK.
      * \else
      *     @brief 发起playback play事件。
@@ -191,7 +209,8 @@ public:
     std::future<bool> notifyOfWakeWord(
             uint64_t beginIndex,
             uint64_t endIndex,
-            const std::string& keyword);
+            const std::string& keyword,
+            const std::string requestId = "");
 
     static const auto INVALID_INDEX = std::numeric_limits<uint64_t>::max();
     /**
@@ -206,6 +225,8 @@ public:
      * \endif
      */
     void notifyOfTapToTalk(uint64_t beginIndex = INVALID_INDEX);
+
+    void startBDSSDKListen();
 
     /**
      * \if english
@@ -309,13 +330,25 @@ public:
 
     /**
      * \if english
+     *     @brief Inform SDK authorization status.
+     *     @param[in] status True/False: online/offline.
+     * \else
+     *     @brief 通知SDK授权就绪状态。
+     *     @param[in] status True/False：已联网/未联网。
+     * \endif
+     */
+    void notifyAuthReady(bool status);
+
+    /**
+     * \if english
      *     @brief Inform SDK reset Http2 Connection.
      * \else
      *     @brief 通知SDK重新建立长连接。
      * \endif
      */
     void notifyResetHttp2Connection();
-
+#ifndef  BUILD_BDS_SDK
+#ifdef KITTAI_KEY_WORD_DETECTOR
     /**
      * \if english
      *     @brief Inform SDK the device change state to play music scene.
@@ -333,6 +366,8 @@ public:
      * \endif
      */
     void exitPlayMusicScene();
+#endif
+#endif
 
     /**
      * \if english
@@ -368,6 +403,19 @@ public:
      * \endif
      */
     void notifySystemTimeReady();
+
+    /**
+     * \if english
+     *     @brief Set bduss to Dcs SDK.
+     *     @param[in] bduss from app.
+     *     @return True/False.
+     * \else
+     *     @brief 通知SDK收到DLP传来的BDUSS信息。
+     *     @param[in] bduss 上层下发的bduss信息。
+     *     @return True/False：操作成功/失败。
+     * \endif
+     */
+    bool setBDUSS(const std::string& bduss);
 
 private:
     /**

@@ -39,12 +39,20 @@ void ApplicationManager::onDialogUXStateChanged(DialogUXState state) {
     if (m_dcsSdk) {
         switch (state) {
             case DialogUXState::MEDIA_PLAYING:
+#if 0
+#ifdef KITTAI_KEY_WORD_DETECTOR
                 m_dcsSdk->enterPlayMusicScene();
+#endif
+#endif
                 break;
             case DialogUXState::MEDIA_STOPPED:
             case DialogUXState::MEDIA_FINISHED:
                 if (!DeviceIoWrapper::getInstance()->isBtPlaying()) {
+#if 0
+#ifdef KITTAI_KEY_WORD_DETECTOR
                     m_dcsSdk->exitPlayMusicScene();
+#endif
+#endif
                 }
                 break;
             default:
@@ -159,6 +167,42 @@ int ApplicationManager::getSpeakerVolume() {
 
 bool ApplicationManager::getSpeakerMuteStatus() {
     return DeviceIoWrapper::getInstance()->isMute();
+}
+
+bool ApplicationManager::setStartDebugMode() {
+    APP_INFO("ApplicationManager setStartDebug");
+    LOGGER_ENABLE(true);
+#ifdef DEBUG_FLAG
+    system("systemctl start android-tools-adbd.service");
+#else
+    system("/data/usr/bin/android-gadget-setup adb & /data/usr/bin/adbd");
+#endif
+
+    debugStarted();
+}
+
+bool ApplicationManager::setStopDebugMode() {
+    APP_INFO("ApplicationManager setStopDebug");
+    LOGGER_ENABLE(false);
+#ifdef DEBUG_FLAG
+    system("systemctl stop android-tools-adbd.service");
+#else
+    system("killall -9 adbd");
+#endif
+
+    debugStoped();
+}
+
+void ApplicationManager::debugStarted() {
+    if (m_dcsSdk) {
+        m_dcsSdk->debugStarted();
+    }
+}
+
+void ApplicationManager::debugStoped() {
+    if (m_dcsSdk) {
+        m_dcsSdk->debugStoped();
+    }
 }
 
 void ApplicationManager::setBluetoothStatus(bool status) {
@@ -308,13 +352,12 @@ bool ApplicationManager::systemInformationGetStatus(duerOSDcsSDK::sdkInterfaces:
 bool ApplicationManager::systemInformationHardReset() {
     APP_INFO("ApplicationManager systemInformationHardReset");
     DeviceIoWrapper::getInstance()->setTouchStartNetworkConfig(true);
-#ifdef Box86    
+#ifdef Box86
     DuerLinkWrapper::getInstance()->waitLogin();
     DuerLinkWrapper::getInstance()->setFromConfigNetwork(true);
 #else
     DuerLinkWrapper::getInstance()->startNetworkConfig();
 #endif
-
     return true;
 }
 
@@ -358,7 +401,7 @@ bool ApplicationManager::sendInfraredRayCodeRequest(int carrierFrequency, const 
 void ApplicationManager::setDcsSdk(std::shared_ptr<duerOSDcsSDK::sdkInterfaces::DcsSdk> dcsSdk) {
     m_dcsSdk = dcsSdk;
 }
-
+    //set mic, wait for edit, mika
 void ApplicationManager::setMicrophoneWrapper(std::shared_ptr<PortAudioMicrophoneWrapper> micWrapper) {
     m_micWrapper = micWrapper;
 }

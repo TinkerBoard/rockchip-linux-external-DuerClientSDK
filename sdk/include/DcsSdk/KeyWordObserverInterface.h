@@ -83,7 +83,9 @@ public:
     virtual void onKeyWordDetected(
         std::string keyword,
         uint64_t beginIndex = UNSPECIFIED_INDEX,
-        uint64_t = UNSPECIFIED_INDEX) = 0;
+        uint64_t = UNSPECIFIED_INDEX,
+        std::string requestId = "",
+        int wake_dir = -1) = 0;
 };
 
 }  // namespace sdkInterfaces

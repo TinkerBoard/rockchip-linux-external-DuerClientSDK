@@ -60,6 +60,12 @@ bool convert8601TimeStringToUnix(const std::string& timeString, int64_t* unixTim
  */
 bool getCurrentUnixTime(int64_t* currentTime);
 
+/**
+ * 获取当前毫秒时间戳
+ * @return 当前毫秒时间戳
+ */
+unsigned int currentTimeMs();
+
 }  // namespace deviceTools
 }  // namespace deviceCommonLib
 

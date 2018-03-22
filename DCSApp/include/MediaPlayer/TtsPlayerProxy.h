@@ -24,13 +24,19 @@
 #include <DcsSdk/MediaPlayerInterface.h>
 #include "DCSApp/ThreadPoolExecutor.h"
 
-#include "MediaPlayer/TtsPlayer.h"
+#include "MediaPlayer/Mp3StreamPlayer.h"
+#include "MediaPlayer/PcmStreamPlayer.h"
 #include "MediaPlayer/TtsPlayerListener.h"
+
+///@cxt 20180207
+#include <DcsSdk/Stream.h>
 
 namespace duerOSDcsApp {
 namespace mediaPlayer {
 
 using duerOSDcsSDK::sdkInterfaces::AttachmentReader;
+///@cxt 20180207
+using duerOSDcsSDK::sdkInterfaces::Stream;
 
 /**
  * Class that handles creation of audio pipeline and playing of audio data.
@@ -51,10 +57,15 @@ public:
      */
     ~TtsPlayerProxy();
 
+    void setStreamFormat(const std::string& streamFormat);
+
     /// @name Overridden MediaPlayerInterface methods.
     /// @{
     duerOSDcsSDK::sdkInterfaces::MediaPlayerStatus setSource(
             std::shared_ptr<AttachmentReader> attachmentReader) override;
+
+    ///@cxt 20180207
+    void setStream(std::shared_ptr<Stream> stream) override;
 
     duerOSDcsSDK::sdkInterfaces::MediaPlayerStatus setSource(
             const std::string& audio_file_path, bool repeat) override;
@@ -89,7 +100,9 @@ private:
      */
     bool init();
 
-    void executePlay();
+    void executeMp3Play();
+
+    void executePcmPlay();
 
     /**
      * Worker thread handler for setting the source of audio to play.
@@ -111,9 +124,13 @@ private:
     /// @c MediaPlayerObserverInterface instance to notify when the playback state changes.
     std::shared_ptr<duerOSDcsSDK::sdkInterfaces::MediaPlayerObserverInterface> m_playerObserver;
 
-    std::shared_ptr<AttachmentReader> m_attachment_reader;
+    ///@cxt 20180207
+    std::shared_ptr<Stream> m_attachmentStream;
 
-    TtsPlayer* m_tts_player;
+    Mp3StreamPlayer *m_mp3Player;
+    PcmStreamPlayer *m_pcmPlayer;
+
+    bool m_isFormatMp3;
 
     /**
      * @c Executor which queues up operations from asynchronous API calls.

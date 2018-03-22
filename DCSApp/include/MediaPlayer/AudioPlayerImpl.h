@@ -23,7 +23,6 @@
 #include <atomic>
 #include "AlsaController.h"
 #include "PcmBufPool.h"
-#include "TimerUtil.h"
 #include "AudioPlayerInterface.h"
 #include "AudioPlayerListener.h"
 #include "DCSApp/ThreadPoolExecutor.h"

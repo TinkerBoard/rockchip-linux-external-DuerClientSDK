@@ -78,12 +78,14 @@ void DuerLinkWrapper::setCallback(IDuerLinkWrapperCallback *callback) {
     m_callback = callback;
 }
 
-void DuerLinkWrapper::initDuerLink() {
+void DuerLinkWrapper::initDuerLink(const std::string& bdussFilePath, const std::string& clientId) {
 
 //    DuerLinkMtkInstance::get_instance()->init_config_network_parameter(duerLink::platform_type::EHodor,
-//                                                     duerLink::auto_config_network_type::EAll,
-//                                                     DeviceIoWrapper::getInstance()->getDeviceId(),
-//                                                     "ap0");
+//                                                                       duerLink::auto_config_network_type::EAll,
+//                                                                       DeviceIoWrapper::getInstance()->getDeviceId(),
+//                                                                       "ap0",
+//                                                                       bdussFilePath,
+//                                                                       clientId);
 
     DuerLinkMtkInstance::get_instance()->set_networkConfig_observer(this);
 
@@ -351,9 +353,11 @@ void DuerLinkWrapper::networkLinkFailed() {
     }
 }
 
-void DuerLinkWrapper::startDiscoverAndBound(const string& client_id) {
-    DuerLinkMtkInstance::get_instance()->init_discovery_parameter(DeviceIoWrapper::getInstance()->getDeviceId()
-                                                                         , client_id, "eth0");
+void DuerLinkWrapper::startDiscoverAndBound(const string& client_id, const std::string& bdussfile) {
+    DuerLinkMtkInstance::get_instance()->init_discovery_parameter(DeviceIoWrapper::getInstance()->getDeviceId(),
+                                                                  client_id,
+                                                                  "eth0",
+                                                                  bdussfile);
     DuerLinkMtkInstance::get_instance()->set_dlp_data_observer(this);
     DuerLinkMtkInstance::get_instance()->start_discover_and_bound();
 }
@@ -361,6 +365,13 @@ void DuerLinkWrapper::startDiscoverAndBound(const string& client_id) {
 string DuerLinkWrapper::NotifyReceivedData(const string& jsonPackageData, int iSessionID) {
     if (m_callback) {
         m_callback->duerlinkNotifyReceivedData(jsonPackageData);
+    }
+    return "";
+}
+
+std::string DuerLinkWrapper::notify_received_bduss(const std::string &bdussValue) {
+    if (m_callback) {
+        m_callback->duerlink_notify_received_bduss(bdussValue);
     }
     return "";
 }

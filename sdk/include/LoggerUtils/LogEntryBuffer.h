@@ -31,11 +31,7 @@
  * #ifndef used here to allow overriding this value from the compiler command line.
  */
 #ifndef ACSDK_LOG_ENTRY_BUFFER_SMALL_BUFFER_SIZE
-#ifdef ENABLE_LOG_FILENAME
-#define ACSDK_LOG_ENTRY_BUFFER_SMALL_BUFFER_SIZE 512
-#else
 #define ACSDK_LOG_ENTRY_BUFFER_SMALL_BUFFER_SIZE 128
-#endif
 #endif
 
 namespace deviceCommonLib {

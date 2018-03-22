@@ -346,6 +346,24 @@ public:
     virtual bool getSpeakerMuteStatus() = 0;
 
     /**
+    * \if english
+    *     @brief Start debug mode.
+    * \else
+    *     @brief 开启调试模式。
+    * \endif
+    */
+    virtual bool setStartDebugMode() = 0;
+
+    /**
+     * \if english
+     *     @brief Set stop debug mode.
+     * \else
+     *     @brief 退出调试模式。
+     * \endif
+     */
+    virtual bool setStopDebugMode() = 0;
+
+    /**
      * \if english
      *     @brief Turn on/off blue tooth.
      *     @param[in] status Turn on/off status, True/False: turn on/turn off.

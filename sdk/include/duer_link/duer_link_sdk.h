@@ -27,7 +27,7 @@ public:
     static void destroy();
 
     /**
-    * 设置配置文件路径，MTK默认路径/data/appresources/duerLink_config.json；
+    * 设置配置文件路径，MTK默认路径./appresources/duerLink_config.json；
     * 第三方默认当前路径./duerLink_config.json
     * @param config_file 配置文件路径
     **/
@@ -43,7 +43,9 @@ public:
     void init_config_network_parameter(platform_type speaker_type,
                                        auto_config_network_type autoType,
                                        std::string devicedID,
-                                       std::string interface);
+                                       std::string interface = "",
+                                       std::string bdussfile = "/data/duer/budss.txt",
+                                       std::string appID = "Bd9rtoM39XmYIesLpaAVX19jBAcF4gWq");
 
     /**
     * 设置配网回调

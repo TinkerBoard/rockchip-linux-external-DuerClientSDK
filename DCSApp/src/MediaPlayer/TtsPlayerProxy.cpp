@@ -19,6 +19,8 @@
 #include "DCSApp/ActivityMonitorSingleton.h"
 #include "LoggerUtils/DcsSdkLogger.h"
 
+#include <malloc.h>
+
 namespace duerOSDcsApp {
 namespace mediaPlayer {
 
@@ -29,6 +31,9 @@ using application::ThreadPoolExecutor;
 #define READ_TIMEOUT_MS 3000
 #define RETRY_READ_TIMEOUT_MS 800
 #define ATTACHMENT_READ_CHUNK_SIZE 512
+
+#define FORMAT_MP3 "AUDIO_MPEG"
+#define FORMAT_PCM "AUDIO_L16_RATE_16000_CHANNELS_1"
 
 std::shared_ptr<TtsPlayerProxy> TtsPlayerProxy::create(const std::string& audio_device) {
     APP_INFO("createCalled");
@@ -42,10 +47,18 @@ std::shared_ptr<TtsPlayerProxy> TtsPlayerProxy::create(const std::string& audio_
 
 TtsPlayerProxy::TtsPlayerProxy(const std::string& audio_device) :
         m_playerObserver{nullptr},
-        m_tts_player{nullptr} {
+        m_mp3Player{nullptr},
+        m_pcmPlayer{nullptr},
+        m_isFormatMp3{true} {
     m_executor = ThreadPoolExecutor::getInstance();
-    m_tts_player = new TtsPlayer(audio_device);
-    m_tts_player->registerListener(this);
+    m_mp3Player = new Mp3StreamPlayer(audio_device);
+#ifdef MTK8516
+    m_pcmPlayer = new PcmStreamPlayer("track:10");
+#else
+    m_pcmPlayer = new PcmStreamPlayer("default");
+#endif
+    m_mp3Player->registerListener(this);
+    m_pcmPlayer->registerListener(this);
 }
 
 bool TtsPlayerProxy::init() {
@@ -55,17 +68,25 @@ bool TtsPlayerProxy::init() {
 TtsPlayerProxy::~TtsPlayerProxy() {
     APP_INFO("~TtsPlayerProxy");
     stop();
-    if (m_tts_player) {
-        delete m_tts_player;
-        m_tts_player = nullptr;
-    }
+    delete m_mp3Player;
+    m_mp3Player = nullptr;
+    delete m_pcmPlayer;
+    m_pcmPlayer = nullptr;
+}
+
+void TtsPlayerProxy::setStreamFormat(const std::string& streamFormat) {
+    m_isFormatMp3 = (streamFormat == FORMAT_MP3);
 }
 
 MediaPlayerStatus TtsPlayerProxy::setSource(
         std::shared_ptr<AttachmentReader> reader) {
     APP_INFO("setSourceCalled");
-    handleSetAttachmentReaderSource(std::move(reader));
     return MediaPlayerStatus::SUCCESS;
+}
+
+void TtsPlayerProxy::setStream(std::shared_ptr<Stream> stream) {
+    APP_INFO("setStream called ---------------");
+    m_attachmentStream = stream;
 }
 
 MediaPlayerStatus TtsPlayerProxy::setSource(const std::string& audio_file_path, bool repeat) {
@@ -80,86 +101,121 @@ MediaPlayerStatus TtsPlayerProxy::setSource(const std::string& url) {
 
 MediaPlayerStatus TtsPlayerProxy::play() {
     APP_INFO("playCalled");
-    m_executor->submit([this] () { executePlay(); });
+    if (m_isFormatMp3) {
+        m_executor->submit([this] () { executeMp3Play(); });
+    } else {
+        m_executor->submit([this] () { executePcmPlay(); });
+    }
+
     return MediaPlayerStatus::SUCCESS;
 }
 
-void TtsPlayerProxy::executePlay() {
-    APP_INFO("executePlayCalled");
-    m_tts_player->ttsPlay();
+void TtsPlayerProxy::executeMp3Play() {
+    APP_INFO("executeMp3Play called ----------");
+    m_mp3Player->ttsPlay();
     char buffer[ATTACHMENT_READ_CHUNK_SIZE];
-    APP_INFO("Going to read data from AttachmentReader.");
-    auto status = AttachmentReader::ReadStatus::OK;
+    APP_INFO("Going to read data from Attachment Stream.");
     bool first_packet_flag = false;
-    bool trigger_retry = false;
-    std::chrono::milliseconds timeout_ms{READ_TIMEOUT_MS};
-    std::chrono::milliseconds retry_timeout_ms{RETRY_READ_TIMEOUT_MS};
     while (true) {
-        size_t size = 0;
-        if (trigger_retry) {
-            size = m_attachment_reader->read(buffer,
-                                             ATTACHMENT_READ_CHUNK_SIZE,
-                                             &status,
-                                             retry_timeout_ms);
-        } else {
-            size = m_attachment_reader->read(buffer,
-                                             ATTACHMENT_READ_CHUNK_SIZE,
-                                             &status,
-                                             timeout_ms);
-        }
-        
+        int size = 0;
+        if (m_attachmentStream) {
+            Stream::StreamStatus status = m_attachmentStream->readData(buffer, size);
+            if (size > 0 && status == Stream::StreamStatus::BUFFER_DATA) {
+                if (!first_packet_flag) {
+                    first_packet_flag = true;
+                    executeRecvFirstpacket();
+                }
 
-        //report to sdk when first tts packet received.
-        if (!first_packet_flag) {
-            first_packet_flag = true;
-            executeRecvFirstpacket();
-        }
+                m_mp3Player->pushData(buffer, size);
+            } else {
+                APP_INFO("executePlay(), size === 0 -----------");
+                APP_INFO("executePlay(), status ==== %d\n", (int)status);
 
-        if (status == AttachmentReader::ReadStatus::OK ||
-            status == AttachmentReader::ReadStatus::OK_WOULDBLOCK) {
-            m_tts_player->pushData(buffer, size);
-            trigger_retry = false;
-        } else if (status == AttachmentReader::ReadStatus::OK_TIMEDOUT) {
-            if (trigger_retry) {
                 break;
             }
-            trigger_retry = true;
-            APP_INFO("############AttachmentReader Read Timeout");
-        } else if (status == AttachmentReader::ReadStatus::CLOSED ||
-                   status == AttachmentReader::ReadStatus::ERROR_OVERRUN ||
-                   status == AttachmentReader::ReadStatus::ERROR_BYTES_LESS_THAN_WORD_SIZE ||
-                   status == AttachmentReader::ReadStatus::ERROR_INTERNAL) {
+        } else {
+            APP_INFO("AttachmentStream is NULL, break -----------");
             break;
         }
     }
-    m_tts_player->ttsEnd();
-    m_attachment_reader->close();
-    APP_INFO("Finish reading data from AttachmentReader.");
+
+    m_mp3Player->ttsEnd();
+    if (m_attachmentStream) {
+        m_attachmentStream->close();
+        m_attachmentStream.reset();
+    }
+
+    APP_INFO("Finish reading data from Attachment Stream ------------");
+}
+
+void TtsPlayerProxy::executePcmPlay() {
+    APP_INFO("executePcmPlay called ----------");
+    m_pcmPlayer->ttsPlay();
+    char buffer[ATTACHMENT_READ_CHUNK_SIZE];
+    APP_INFO("Going to read data from Attachment Stream.");
+    bool first_packet_flag = false;
+    while (true) {
+        int size = 0;
+        if (m_attachmentStream) {
+            Stream::StreamStatus status = m_attachmentStream->readData(buffer, size);
+            if (size > 0 && status == Stream::StreamStatus::BUFFER_DATA) {
+                if (!first_packet_flag) {
+                    first_packet_flag = true;
+                    executeRecvFirstpacket();
+                }
+
+                m_pcmPlayer->pushData(buffer, size);
+            } else {
+                break;
+            }
+        } else {
+            APP_INFO("AttachmentStream is NULL, break -----------");
+            break;
+        }
+    }
+
+    m_pcmPlayer->ttsEnd();
+    if (m_attachmentStream) {
+        m_attachmentStream->close();
+        m_attachmentStream.reset();
+    }
+
+    APP_INFO("Finish reading data from Attachment Stream ------------");
 }
 
 MediaPlayerStatus TtsPlayerProxy::stop() {
     APP_INFO("stopCalled");
-    if (m_tts_player) {
-        m_tts_player->ttsStop();
+    if (m_isFormatMp3) {
+        if (m_mp3Player) {
+            m_mp3Player->ttsStop();
+        }
+    } else {
+        if (m_pcmPlayer) {
+            m_pcmPlayer->ttsStop();
+        }
     }
     return MediaPlayerStatus::SUCCESS;
 }
 
 MediaPlayerStatus TtsPlayerProxy::pause() {
     APP_INFO("pausedCalled");
-    if (m_tts_player) {
-        m_tts_player->ttsStop();
+    if (m_isFormatMp3) {
+        if (m_mp3Player) {
+            m_mp3Player->ttsStop();
+        }
+    } else {
+        if (m_pcmPlayer) {
+            m_pcmPlayer->ttsStop();
+        }
     }
     return MediaPlayerStatus::SUCCESS;
 }
 
 MediaPlayerStatus TtsPlayerProxy::resume() {
-    APP_INFO("resumeCalled");
     return MediaPlayerStatus::SUCCESS;
 }
 
 std::chrono::milliseconds TtsPlayerProxy::getOffset() {
-    APP_INFO("getOffsetInMillisecondsCalled");
     return std::chrono::milliseconds(0);
 }
 
@@ -173,12 +229,6 @@ void TtsPlayerProxy::setObserver(std::shared_ptr<MediaPlayerObserverInterface> o
 void TtsPlayerProxy::handleSetAttachmentReaderSource(
         std::shared_ptr<AttachmentReader> reader) {
     APP_INFO("handleSetSourceCalled");
-
-    if (reader != nullptr) {
-        m_attachment_reader = reader;
-    } else {
-        APP_ERROR("handleSetAttachmentReaderSourceFailed reader is null");
-    }
 }
 
 void TtsPlayerProxy::executeRecvFirstpacket() {

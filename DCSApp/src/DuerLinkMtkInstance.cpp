@@ -119,7 +119,7 @@ bool tmp_wpa_conf(const string ssid, const string pwd, const string path) {
     insert_ct += pwd;
     insert_ct += NETWORK_WPA_CONF_END;
 
-    fprintf(stderr,"Wpa_supplicant.conf insert CT [%s]\n", insert_ct.c_str());
+    APP_INFO("Wpa_supplicant.conf insert CT [%s]", insert_ct.c_str());
 
     deviceCommonLib::deviceTools::printTickCount("network_config cp wpa.conf begin.");
 
@@ -757,21 +757,26 @@ void DuerLinkMtkInstance::start_discover_and_bound() {
 
 void DuerLinkMtkInstance::init_config_network_parameter(platform_type speaker_type,
                                                         auto_config_network_type autoType,
-                                                        string devicedID,
-                                                        string interface) {
+                                                        const std::string& devicedID,
+                                                        const std::string& interface,
+                                                        const std::string& bdussfile,
+                                                        const std::string& clientId) {
     duerLinkSdk::get_instance()->init_config_network_parameter(speaker_type,
                                                                autoType,
                                                                devicedID,
-                                                               interface);
+                                                               interface,
+                                                               bdussfile,
+                                                               clientId);
 }
 
-void DuerLinkMtkInstance::init_discovery_parameter(string devicedID,
-                                                   string appId,
-                                                   string interface) {
+void DuerLinkMtkInstance::init_discovery_parameter(const std::string& devicedID,
+                                                   const std::string& appId,
+                                                   const std::string& interface,
+                                                   const std::string& bdussfile) {
     //test cuid and access token for linkplay
 //    duerLinkSdk::get_instance()->set_config_json_file("/data/duer/duerLink_config.json");
 
-    duerLinkSdk::get_instance()->init_discovery_parameter(devicedID, appId, interface, "/data/duer/bduss.txt");
+    duerLinkSdk::get_instance()->init_discovery_parameter(devicedID, appId, interface, bdussfile);
 
 }
 

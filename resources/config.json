@@ -21,17 +21,15 @@
     "dcssdkVersion":{
         "version":"0.3.8"
     },
-    "wakeup":{
-        "libraryVersion":"0.2.1",
-        "modelVersion":"0.2.2",
-        "commonWakeup":{
-            "kittResourceFilename":"/data/resources/common.res",
-            "kittModelFilename":"/data/resources/xiaodu_l12r10_sen_35_35_32_highsen_40_40_39_0104.umdl",
-            "keyWords":"小度小度,小度小度,小度小度",
-            "sensitivity":"0.35,0.35,0.32",
-            "highSensitivity":"0.4,0.4,0.39",
-            "audioGain":2,
-            "frontEnd":true
-        }
-    }
+    "baiduSpeechSDK":{
+        "wakeupResourceFilename":"/data/resources/esis_20180221_test-20180221234313-5ZyZKb.pkg",
+        "vadResourceFilename":"/data/resources/esis_vad_model_20171023.pkg",
+        "serverUrl":"bdqu://180.149.131.19:8000/streaming-asr",
+        "eventUrl":"bdqu://180.149.131.19:8000/e2e-event",
+        "productID":"8001",
+        "protocol":"800",
+        "ttsParam":"",
+        "bdsLogLevel":"6",
+        "dcsToken":"24.a36b289905caf1e5d6a41b8823b1cf2d.2592000.1524192064.282335-9858694"
+	}
 }

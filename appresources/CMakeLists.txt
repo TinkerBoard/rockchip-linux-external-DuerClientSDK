@@ -3,30 +3,7 @@ project(APPRESOURCES LANGUAGES CXX)
 
 include(../build/BuildDefaults.cmake)
 
-install(DIRECTORY 
-    "${PROJECT_SOURCE_DIR}/common/"
-    DESTINATION
-    "${CMAKE_INSTALL_PREFIX}/appresources"
-    FILES_MATCHING PATTERN "*.mp3")
-
-install(DIRECTORY 
-    "${PROJECT_SOURCE_DIR}/common/"
-    DESTINATION
-    "${CMAKE_INSTALL_PREFIX}/appresources"
-    FILES_MATCHING PATTERN "*.wav")
-
-install(DIRECTORY 
-    "${PROJECT_SOURCE_DIR}/common/"
-    DESTINATION
-    "${CMAKE_INSTALL_PREFIX}/appresources"
-    FILES_MATCHING PATTERN "*.pcm")
-
-if(${Platform} MATCHES "Hodor"
-        OR ${Platform} MATCHES "MTK"
-        OR ${Platform} MATCHES "Kuke"
-        OR ${Platform} MATCHES "Raspiberry"
-        OR ${Platform} MATCHES "Dot"
-        OR ${Platform} MATCHES "Box86")
+if(EXISTS "${PROJECT_SOURCE_DIR}/${Platform}/")
     install(DIRECTORY
             "${PROJECT_SOURCE_DIR}/${Platform}/"
             DESTINATION
@@ -37,3 +14,4 @@ else()
             DESTINATION
             "${CMAKE_INSTALL_PREFIX}/appresources")
 endif()
+

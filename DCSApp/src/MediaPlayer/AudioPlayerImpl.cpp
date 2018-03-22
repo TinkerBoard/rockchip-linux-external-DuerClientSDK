@@ -17,13 +17,12 @@
  */
 
 #include <LoggerUtils/DcsSdkLogger.h>
+#include <DeviceTools/TimeUtils.h>
 #include "MediaPlayer/AudioPlayerImpl.h"
 
 namespace duerOSDcsApp {
 namespace mediaPlayer {
 using application::ThreadPoolExecutor;
-
-static const std::string TAG("AudioPlayerImpl");
 
 #define RESAMPLE_OUTPUT_BUFFER_SIZE 192000
 #define PCM_PLAYBUFFER_SIZE 48000
@@ -42,14 +41,15 @@ static const std::string TAG("AudioPlayerImpl");
 #define RETRY_OPEN_TIMEINTERVAL_MS 100000
 #define MAX_RETRY_DECODE_NUM 8
 #define RETRY_DECODE_TIME_UNIT 300000
+#define WAIT_DATA_TIMEINTERVAL_MS 300000
 
-AudioPlayerImpl::AudioPlayerImpl(const std::string &audio_dev) : m_formatCtx(NULL),
-                                                                 m_codecCtx(NULL),
-                                                                 m_codecParam(NULL),
-                                                                 m_pcmBuffer(NULL),
-                                                                 m_frameBuffer(NULL),
-                                                                 m_alsaController(NULL),
-                                                                 m_listener(NULL),
+AudioPlayerImpl::AudioPlayerImpl(const std::string &audio_dev) : m_formatCtx(nullptr),
+                                                                 m_codecCtx(nullptr),
+                                                                 m_codecParam(nullptr),
+                                                                 m_pcmBuffer(nullptr),
+                                                                 m_frameBuffer(nullptr),
+                                                                 m_alsaController(nullptr),
+                                                                 m_listener(nullptr),
                                                                  m_status(AUDIOPLAYER_STATUS_IDLE),
                                                                  m_decodeThread(0),
                                                                  m_playThread(0),
@@ -81,11 +81,11 @@ AudioPlayerImpl::AudioPlayerImpl(const std::string &audio_dev) : m_formatCtx(NUL
     m_executor = ThreadPoolExecutor::getInstance();
     m_alsaController = new AlsaController(audio_dev);
     m_alsaController->init(48000, m_outChannel);
-    pthread_mutex_init(&m_decodeMutex, NULL);
-    pthread_mutex_init(&m_playMutex, NULL);
-    pthread_mutex_init(&m_alsaMutex, NULL);
-    pthread_cond_init(&m_decodeCond, NULL);
-    pthread_cond_init(&m_playCond, NULL);
+    pthread_mutex_init(&m_decodeMutex, nullptr);
+    pthread_mutex_init(&m_playMutex, nullptr);
+    pthread_mutex_init(&m_alsaMutex, nullptr);
+    pthread_cond_init(&m_decodeCond, nullptr);
+    pthread_cond_init(&m_playCond, nullptr);
     av_log_set_callback(ffmpegLogOutput);
     av_log_set_level(AV_LOG_INFO);
     av_register_all();
@@ -94,8 +94,8 @@ AudioPlayerImpl::AudioPlayerImpl(const std::string &audio_dev) : m_formatCtx(NUL
 
     m_pcmBuffer = (uint8_t *) av_malloc(PCM_PLAYBUFFER_SIZE);
     m_frameBuffer = (uint8_t *) av_malloc(RESAMPLE_OUTPUT_BUFFER_SIZE);
-    pthread_create(&m_decodeThread, NULL, decodeFunc, this);
-    pthread_create(&m_playThread, NULL, playFunc, this);
+    pthread_create(&m_decodeThread, nullptr, decodeFunc, this);
+    pthread_create(&m_playThread, nullptr, playFunc, this);
 }
 
 AudioPlayerImpl::~AudioPlayerImpl() {
@@ -105,30 +105,28 @@ AudioPlayerImpl::~AudioPlayerImpl() {
     pthread_cond_signal(&m_playCond);
     pthread_cond_signal(&m_decodeCond);
 
-    void *play_thread_return = NULL;
+    void *play_thread_return = nullptr;
     if (m_playThread != 0) {
         pthread_join(m_playThread, &play_thread_return);
     }
-    void *decode_thread_return = NULL;
+    void *decode_thread_return = nullptr;
     if (m_decodeThread != 0) {
         pthread_join(m_decodeThread, &decode_thread_return);
     }
 
-    if (m_pcmBuffer != NULL) {
+    if (m_pcmBuffer != nullptr) {
         av_free(m_pcmBuffer);
-        m_pcmBuffer = NULL;
+        m_pcmBuffer = nullptr;
     }
-    if (m_frameBuffer != NULL) {
+    if (m_frameBuffer != nullptr) {
         av_free(m_frameBuffer);
-        m_frameBuffer = NULL;
+        m_frameBuffer = nullptr;
     }
 
     m_alsaController->aslaAbort();
     m_alsaController->alsaClose();
-    if (m_alsaController) {
-        delete m_alsaController;
-        m_alsaController = NULL;
-    }
+    delete m_alsaController;
+    m_alsaController = nullptr;
 
     pthread_mutex_destroy(&m_alsaMutex);
     pthread_mutex_destroy(&m_decodeMutex);
@@ -143,13 +141,13 @@ void AudioPlayerImpl::registerListener(AudioPlayerListener *notify) {
 }
 
 void *AudioPlayerImpl::decodeFunc(void *arg) {
-    AudioPlayerImpl *player = (AudioPlayerImpl *) arg;
+    auto player = (AudioPlayerImpl*)arg;
     while (player->m_threadAlive) {
         pthread_mutex_lock(&player->m_decodeMutex);
         while (player->m_url.empty()) {
             pthread_cond_wait(&player->m_decodeCond, &player->m_decodeMutex);
             if (!player->m_threadAlive) {
-                return NULL;
+                return nullptr;
             }
         }
 
@@ -167,8 +165,8 @@ void *AudioPlayerImpl::decodeFunc(void *arg) {
             player->m_formatCtx->interrupt_callback.opaque = player;
             open_ret = avformat_open_input(&player->m_formatCtx,
                                            player->m_url.c_str(),
-                                           NULL,
-                                           NULL);
+                                           nullptr,
+                                           nullptr);
             if (open_ret == 0) {
                 l_open_success_flag = true;
                 break;
@@ -186,7 +184,7 @@ void *AudioPlayerImpl::decodeFunc(void *arg) {
             continue;
         }
 
-        if (avformat_find_stream_info(player->m_formatCtx, NULL) < 0) {
+        if (avformat_find_stream_info(player->m_formatCtx, nullptr) < 0) {
             player->freeFormatContext();
             player->m_url = "";
             pcm_pool->setEndFlag(true);
@@ -196,11 +194,7 @@ void *AudioPlayerImpl::decodeFunc(void *arg) {
         }
         av_dump_format(player->m_formatCtx, 0, player->m_url.c_str(), false);
         player->m_durationMs = (player->m_formatCtx->duration) / 1000;
-        if (player->m_durationMs > 0) {
-            player->m_seekable = true;
-        } else {
-            player->m_seekable = false;
-        }
+        player->m_seekable = (player->m_durationMs > 0);
 
         int audio_stream = -1;
         for (unsigned int i = 0; i < player->m_formatCtx->nb_streams; i++) {
@@ -234,7 +228,7 @@ void *AudioPlayerImpl::decodeFunc(void *arg) {
             continue;
         }
 
-        if (avcodec_open2(player->m_codecCtx, codec, NULL) < 0) {
+        if (avcodec_open2(player->m_codecCtx, codec, nullptr) < 0) {
             player->freeCodecContext();
             player->freeFormatContext();
             player->m_url = "";
@@ -270,7 +264,7 @@ void *AudioPlayerImpl::decodeFunc(void *arg) {
                                          player->m_codecCtx->sample_fmt,
                                          player->m_codecCtx->sample_rate,
                                          0,
-                                         NULL);
+                                         nullptr);
         swr_init(convert_ctx);
         if (player->m_seekable && player->m_progressMs != 0) {
             //seek to position
@@ -303,7 +297,7 @@ void *AudioPlayerImpl::decodeFunc(void *arg) {
                 continue;
             }
 
-            player->m_frameTimestamp = TimerUtil::currentTimeMs();
+            player->m_frameTimestamp = deviceCommonLib::deviceTools::currentTimeMs();
             int ret = av_read_frame(player->m_formatCtx, packet);
             if (ret >= 0) {
                 readRetryCount = 0;
@@ -393,7 +387,7 @@ void *AudioPlayerImpl::decodeFunc(void *arg) {
         pcm_pool->setEndFlag(true);
         pthread_mutex_unlock(&player->m_decodeMutex);
     }
-    return NULL;
+    return nullptr;
 }
 
 bool AudioPlayerImpl::retryDecode() {
@@ -402,23 +396,19 @@ bool AudioPlayerImpl::retryDecode() {
     m_formatCtx = avformat_alloc_context();
     m_formatCtx->interrupt_callback.callback = interruptCallback;
     m_formatCtx->interrupt_callback.opaque = this;
-    int open_ret = avformat_open_input(&m_formatCtx, m_url.c_str(), NULL, NULL);
+    int open_ret = avformat_open_input(&m_formatCtx, m_url.c_str(), nullptr, nullptr);
     if (open_ret < 0) {
         freeFormatContext();
         return false;
     }
 
-    if (avformat_find_stream_info(m_formatCtx, NULL) < 0) {
+    if (avformat_find_stream_info(m_formatCtx, nullptr) < 0) {
         freeFormatContext();
         return false;
     }
     av_dump_format(m_formatCtx, 0, m_url.c_str(), false);
     m_durationMs = (m_formatCtx->duration) / 1000;
-    if (m_durationMs > 0) {
-        m_seekable = true;
-    } else {
-        m_seekable = false;
-    }
+    m_seekable = (m_durationMs > 0);
 
     int audio_stream = -1;
     for (unsigned int i = 0; i < m_formatCtx->nb_streams; i++) {
@@ -444,7 +434,7 @@ bool AudioPlayerImpl::retryDecode() {
         return false;
     }
 
-    if (avcodec_open2(m_codecCtx, codec, NULL) < 0) {
+    if (avcodec_open2(m_codecCtx, codec, nullptr) < 0) {
         freeCodecContext();
         freeFormatContext();
         return false;
@@ -473,21 +463,34 @@ void AudioPlayerImpl::freeFormatContext() {
     if (m_formatCtx) {
         avformat_close_input(&m_formatCtx);
         avformat_free_context(m_formatCtx);
-        m_formatCtx = NULL;
+        m_formatCtx = nullptr;
     }
 }
 
 void AudioPlayerImpl::freeCodecContext() {
     if (m_codecCtx) {
         avcodec_free_context(&m_codecCtx);
-        m_codecCtx = NULL;
+        m_codecCtx = nullptr;
     }
 }
 
 void AudioPlayerImpl::handleHungryState() {
     PcmBufPool* pcm_pool = PcmBufPool::getInstance();
     if (pcm_pool->isDirty()) {
-        APP_INFO("===audio player underbuffer");
+        int waitCounter = 0;
+        APP_INFO("===wait for audio data");
+        while (true) {
+            usleep(WAIT_DATA_TIMEINTERVAL_MS);
+            ++waitCounter;
+            if (pcm_pool->size() != 0) {
+                APP_INFO("===return from underbuffer");
+                return;
+            }
+            if (waitCounter >= 6) {
+                break;
+            }
+        }
+        APP_INFO("===not data, audio player underbuffer");
         executePlaybackUnderbuffer(false);
         while (true) {
             usleep(BUFFER_CHECK_INTERVAL_MS);
@@ -504,7 +507,7 @@ void AudioPlayerImpl::handleHungryState() {
 }
 
 void* AudioPlayerImpl::playFunc(void *arg) {
-    AudioPlayerImpl* player = (AudioPlayerImpl*)arg;
+    auto player = (AudioPlayerImpl*)arg;
     PcmBufPool* pcm_pool = PcmBufPool::getInstance();
     bool shouldReportFinishEvent = false;
     while (player->m_threadAlive) {
@@ -512,7 +515,7 @@ void* AudioPlayerImpl::playFunc(void *arg) {
         while (player->m_url.empty()) {
             pthread_cond_wait(&player->m_playCond, &player->m_playMutex);
             if (!player->m_threadAlive) {
-                return NULL;
+                return nullptr;
             }
         }
 
@@ -520,13 +523,11 @@ void* AudioPlayerImpl::playFunc(void *arg) {
         while (!player->m_stopFlag) {
             if (!player->m_pauseFlag && !player->m_finishFlag) {
                 PcmChunk *chunk = pcm_pool->popPcmChunk();
-                if (chunk != NULL && chunk->dat != NULL) {
+                if (chunk != nullptr && chunk->dat != nullptr) {
                     player->pushStream(player->m_outChannel, chunk->dat, chunk->len);
-
                     av_free(chunk->dat);
-                    chunk->dat = NULL;
+                    chunk->dat = nullptr;
                     av_free(chunk);
-                    chunk = NULL;
                 } else {
                     if (pcm_pool->getEndFlag()) {
                         usleep(PLAYFINISH_DELAY_TIME_MS);
@@ -548,7 +549,7 @@ void* AudioPlayerImpl::playFunc(void *arg) {
             player->executePlaybackFinished();
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 void AudioPlayerImpl::audioPlay(const std::string &url,
@@ -564,7 +565,7 @@ void AudioPlayerImpl::audioPlay(const std::string &url,
     m_startOffsetMs = offset;
     m_progressMs = m_startOffsetMs;
 
-    unsigned int current_time = TimerUtil::currentTimeMs();
+    unsigned int current_time = deviceCommonLib::deviceTools::currentTimeMs();
     m_progressStartMs = current_time;
     m_frameTimestamp = current_time;
     m_reportIntervalMs = report_interval;
@@ -604,8 +605,8 @@ void AudioPlayerImpl::pushStream(unsigned int channels,
     m_alsaController->writeStream(channels, buffer, buff_size);
     m_progressMs += (unsigned long) ((buff_size * 1000.0f) / m_bytesPersecond);
 
-    unsigned int current_time = TimerUtil::currentTimeMs();
-    if (m_listener != NULL && current_time - m_progressStartMs >= m_reportIntervalMs) {
+    unsigned int current_time = deviceCommonLib::deviceTools::currentTimeMs();
+    if (m_listener != nullptr && current_time - m_progressStartMs >= m_reportIntervalMs) {
         m_listener->playbackProgress(m_progressMs);
         m_progressStartMs = current_time;
     }
@@ -694,7 +695,7 @@ bool AudioPlayerImpl::seekBy(unsigned int offsetMs) {
     if (m_status == AUDIOPLAYER_STATUS_IDLE || m_status == AUDIOPLAYER_STATUS_FINISHED) {
         return false;
     }
-    if (!m_seekable || m_formatCtx == NULL) {
+    if (!m_seekable || m_formatCtx == nullptr) {
         return false;
     }
     //seek to target position.
@@ -723,8 +724,8 @@ void AudioPlayerImpl::ffmpegLogOutput(void *ptr,
 }
 
 int AudioPlayerImpl::interruptCallback(void *ctx) {
-    AudioPlayerImpl *this_ptr = (AudioPlayerImpl *) ctx;
-    long time_diff = TimerUtil::currentTimeMs() - this_ptr->m_frameTimestamp;
+    auto this_ptr = (AudioPlayerImpl*)ctx;
+    long time_diff = deviceCommonLib::deviceTools::currentTimeMs() - this_ptr->m_frameTimestamp;
     if (this_ptr->m_stopFlag) {
         return -1;
     } else if (time_diff >= TIMEOUT_MS) {
@@ -738,7 +739,7 @@ int AudioPlayerImpl::interruptCallback(void *ctx) {
 void AudioPlayerImpl::executePlaybackStarted() {
     m_executor->submit(
             [this] () {
-                if (m_listener != NULL) {
+                if (m_listener != nullptr) {
                     m_listener->playbackStarted(m_startOffsetMs);
                 }
             }
@@ -754,7 +755,7 @@ void AudioPlayerImpl::executePlaybackUnderbuffer(bool beforeStart) {
                 } else {
                     playProgressInfo = PlayProgressInfo::DURING_PLAY;
                 }
-                if (m_listener != NULL) {
+                if (m_listener != nullptr) {
                     m_listener->playbackBufferunderrun(playProgressInfo);
                 }
             }
@@ -764,7 +765,7 @@ void AudioPlayerImpl::executePlaybackUnderbuffer(bool beforeStart) {
 void AudioPlayerImpl::executePlaybackBufferrefill() {
     m_executor->submit(
             [this] () {
-                if (m_listener != NULL) {
+                if (m_listener != nullptr) {
                     m_listener->playbackBufferefilled();
                 }
             }
@@ -774,7 +775,7 @@ void AudioPlayerImpl::executePlaybackBufferrefill() {
 void AudioPlayerImpl::executePlaybackError() {
     m_executor->submit(
             [this] () {
-                if (m_listener != NULL) {
+                if (m_listener != nullptr) {
                     m_listener->playbackError();
                 }
             }
@@ -784,7 +785,7 @@ void AudioPlayerImpl::executePlaybackError() {
 void AudioPlayerImpl::executePlaybackStopped() {
     m_executor->submit(
             [this] () {
-                if (m_listener != NULL) {
+                if (m_listener != nullptr) {
                     m_listener->playbackStopped(m_progressMs);
                 }
             }
@@ -794,7 +795,7 @@ void AudioPlayerImpl::executePlaybackStopped() {
 void AudioPlayerImpl::executePlaybackPaused() {
     m_executor->submit(
             [this] () {
-                if (m_listener != NULL) {
+                if (m_listener != nullptr) {
                     m_listener->playbackPaused(m_progressMs);
                 }
             }
@@ -804,7 +805,7 @@ void AudioPlayerImpl::executePlaybackPaused() {
 void AudioPlayerImpl::executePlaybackResumed() {
     m_executor->submit(
             [this] () {
-                if (m_listener != NULL) {
+                if (m_listener != nullptr) {
                     m_listener->playbackResumed(m_startOffsetMs);
                 }
             }
@@ -814,7 +815,7 @@ void AudioPlayerImpl::executePlaybackResumed() {
 void AudioPlayerImpl::executePlaybackFinished() {
     m_executor->submit(
             [this] () {
-                if (NULL != m_listener) {
+                if (nullptr != m_listener) {
                     m_listener->playbackFinished(m_progressMs, AudioPlayerFinishStatus::AUDIOPLAYER_FINISHSTATUS_END);
                 }
             }
@@ -824,7 +825,7 @@ void AudioPlayerImpl::executePlaybackFinished() {
 void AudioPlayerImpl::executePlaybackNearlyFinished() {
     m_executor->submit(
             [this] () {
-                if (NULL != m_listener) {
+                if (nullptr != m_listener) {
                     m_listener->playbackNearlyFinished(m_progressMs);
                 }
             }
@@ -834,7 +835,7 @@ void AudioPlayerImpl::executePlaybackNearlyFinished() {
 void AudioPlayerImpl::onStreamInterrupt() {
     m_executor->submit(
             [this] () {
-                if (NULL != m_listener) {
+                if (nullptr != m_listener) {
                     m_listener->playbackStreamUnreach();
                 }
             }

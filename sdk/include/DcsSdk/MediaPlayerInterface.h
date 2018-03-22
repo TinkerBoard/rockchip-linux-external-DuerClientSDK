@@ -26,6 +26,8 @@
 #include "DcsSdk/AttachmentReader.h"
 #include "DcsSdk/MediaPlayerObserverInterface.h"
 #include "DcsSdk/LocalSourcePlayerInterface.h"
+///@cxt 20180207
+#include "DcsSdk/Stream.h"
 
 namespace duerOSDcsSDK {
 namespace sdkInterfaces {
@@ -113,6 +115,11 @@ public:
      */
     virtual MediaPlayerStatus setSource(
         std::shared_ptr<AttachmentReader> attachmentReader) = 0;
+
+    virtual void setStreamFormat(const std::string& streamFormat) {}
+
+    ///@cxt 20180207
+    virtual void setStream(std::shared_ptr<Stream> stream) {}
 
     /**
      * \if english

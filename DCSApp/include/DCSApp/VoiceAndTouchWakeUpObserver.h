@@ -42,7 +42,9 @@ public:
     void onKeyWordDetected(
             std::string keyword,
             uint64_t beginIndex,
-            uint64_t endIndex) override;
+            uint64_t endIndex,
+            std::string requestId,
+            int wake_dir) override;
 
     void touchStartAsr() override;
 
@@ -56,7 +58,9 @@ private:
                          sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX,
                          uint64_t endIndex =
                          sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX,
-                         std::string keyword = "");
+                         std::string keyword = "",
+                         std::string requestId = "",
+                         int wake_dir = -1);
 };
 
 }  // namespace application

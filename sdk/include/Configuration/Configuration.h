@@ -24,9 +24,8 @@
  *
  */
 
-
-#ifndef DEVICE_COMMON_LIB_RUMTIMECONFIGURATION_INCLUDE_CONFIGURATION_H_
-#define DEVICE_COMMON_LIB_RUMTIMECONFIGURATION_INCLUDE_CONFIGURATION_H_
+#ifndef DEVICE_COMMON_LIB_CONFIGURATION_INCLUDE_CONFIGURATION_H_
+#define DEVICE_COMMON_LIB_CONFIGURATION_INCLUDE_CONFIGURATION_H_
 
 #include <map>
 #include <rapidjson/document.h>
@@ -52,15 +51,20 @@ public:
      *  @brief load configuration
      *  @param key the index string.
      *  @param jsonFileName the file name which is loaded.
+     *  @param secretKey key used to encrypt.
+     *  @param keyLen length of key.
      *  @return True/False load configuration succeed or failed.
      * \else
      *  @brief 加载配置方法
      *  @param key 使用的访问索引字符串
      *  @param jsonFileName 要加载的json文件名
+     *  @param secretKey 用于加密的key
+     *  @param keyLen key长度
      *  @return True/False 加载配置成功/失败
      * \endif
      */
-    static bool loadConfiguration(const std::string &key, const std::string &jsonFileName);
+    static bool loadConfiguration(const std::string &key, const std::string &jsonFileName,
+                                  unsigned char* secretKey = nullptr, size_t keyLen = 0);
 
     /**
      * \if english
@@ -74,7 +78,6 @@ public:
      * \endif
      */
     static bool unloadConfiguration(const std::string &key);
-
 
     /**
      * \if english
@@ -125,15 +128,20 @@ protected:
      *  @brief Once this method has been called, the item will be added in the cfgMap
      *  @param key the index key
      *  @param jsonFileName the file name which contains json strings
+     *  @param secretKey key used to encrypt.
+     *  @param keyLen length of key.
      *  @return True/False Whether addItemToMap was successful.
      * \else
      *  @brief 添加item到configMap中
      *  @param key key字符串
      *  @param jsonFileName 包含json字符串的文件名
+     *  @param secretKey 用于加密的key
+     *  @param keyLen key长度
      *  @return True/False 添加成功或失败
      * \endif
      */
-    static bool addItemToMap(const std::string &key, const std::string & jsonFileName);
+    static bool addItemToMap(const std::string &key, const std::string & jsonFileName,
+                             unsigned char* secretKey = nullptr, size_t keyLen = 0);
 
     /**
      * \if english
@@ -143,11 +151,9 @@ protected:
      * \endif
      */
     static std::map<std::string,rapidjson::Document*> m_documentMap;
-
-
 };
 
 }  // namespace configuration
 }  // namespace deviceCommonLib
 
-#endif // DEVICE_COMMON_LIB_RUMTIMECONFIGURATION_INCLUDE_RUMTIME_CONFIGURATION_H_
+#endif // DEVICE_COMMON_LIB_CONFIGURATION_INCLUDE_CONFIGURATION_H_
