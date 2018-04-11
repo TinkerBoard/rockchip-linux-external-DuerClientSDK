@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "DCSApp/get_event.h"
+#include <linux/input.h>
 
 #define NUMBER_OF_LEDS      12
 #define DEV_INPUT_EVENT     "/dev/input"
@@ -65,11 +66,15 @@ volatile int ev_unprocessed;
 static char rk29_keypad[] = {"rk29-keypad"};
 static char gpio_keys[] = {"gpio_keys"};
 static char rk29_rotary[] = {"rotary"};
+static char adc_keys[] = {"adc-keys"};
+static char rk8xx_pwrkey[] = {"rk8xx_pwrkey"};
 
 struct alexa_key key_read[MAX_KEY_BUFFERED];
 struct alexa_support_event_type support_event[] = {
     {KEY_EVENT, rk29_keypad},
     {KEY_EVENT, gpio_keys},
+    {KEY_EVENT, adc_keys},
+    {KEY_EVENT, rk8xx_pwrkey},
     {ROTARY_EVENT, rk29_rotary},
 };
 
@@ -107,13 +112,18 @@ struct alexa_key support_keys [FUNC_LAST_ID] ={
     {207/*KEY_WIFI_MODE*/, 1, 1, enter_wifi_bt_mode_with_onekey, {0,0}},
 };
 #else
-struct alexa_key support_keys [] ={
+struct alexa_key support_keys [] = {
     {KEY_PLAY/*WAKEUP*/, 0, 1,  enter_wakeup_mode,},
     {KEY_PLAY/*WIFI_MODE*/, 1, 1, enter_wifi_mode},
     {KEY_VOLUMEDOWN/*VOL_DOWN*/, 0, 1, volume_step_down},
     {KEY_VOLUMEUP/*VOL_UP*/, 0, 1, volume_step_up},
     {KEY_MICMUTE/*MIC_MUTE*/, 0, 1,  mute_mic},
     {KEY_MICMUTE/*BT_MODE*/, 1, 1, enter_bt_mode},
+    /*next just for evb debug*/
+    {KEY_MENU/*WAKEUP*/, 0, 1,  enter_wakeup_mode,},
+    {KEY_MENU/*WIFI_MODE*/, 1, 1, enter_wifi_mode},
+    {KEY_ESC/*MIC_MUTE*/, 0, 1,  mute_mic},
+    {KEY_ESC/*BT_MODE*/, 1, 1, enter_bt_mode},
 };
 #endif
 
