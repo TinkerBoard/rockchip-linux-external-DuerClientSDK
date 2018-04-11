@@ -19,17 +19,17 @@
         "dcsSandbox":false
     },
     "dcssdkVersion":{
-        "version":"0.3.8"
+        "version":"0.0.1"
     },
     "baiduSpeechSDK":{
-        "wakeupResourceFilename":"/data/resources/esis_20180221_test-20180221234313-5ZyZKb.pkg",
+        "wakeupResourceFilename":"/data/resources/esis_20180330_test-20180409160608-YZY7pg.pkg",
         "vadResourceFilename":"/data/resources/esis_vad_model_20171023.pkg",
-        "serverUrl":"bdqu://180.149.131.19:8000/streaming-asr",
-        "eventUrl":"bdqu://180.149.131.19:8000/e2e-event",
-        "productID":"8001",
+        "serverUrl":"",
+        "eventUrl":"",
+	"productID":"8001",
         "protocol":"800",
         "ttsParam":"",
         "bdsLogLevel":"6",
-        "dcsToken":"24.a36b289905caf1e5d6a41b8823b1cf2d.2592000.1524192064.282335-9858694"
+        "dcsToken":""
 	}
 }

@@ -473,8 +473,9 @@ bool platform_connect_wifi_cb(const char *ssid,
     m_target_ssid = ssid;
     m_target_pwd = pwd;
 
-    deviceCommonLib::deviceTools::printTickCount(m_target_ssid.c_str());
-    deviceCommonLib::deviceTools::printTickCount(m_target_pwd.c_str());
+    APP_INFO("Connect wifi, ssid and pwd [%s] [%s].",
+             m_target_ssid.c_str(),
+             m_target_pwd.c_str());
 
     tmp_wpa_conf(m_target_ssid, m_target_pwd, DUERLINK_WPA_CONFIG_FILE_MTK);
 

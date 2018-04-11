@@ -182,7 +182,7 @@ bool DCSApplication::initialize() {
         DeviceIoWrapper::getInstance()->setMute(true);
     }
 
-#if 0 
+#if 1
     DuerLinkWrapper::getInstance()->initDuerLink(PATH_TO_BDUSS_FILE, m_dcsSdk->getClientId());
 
     DuerLinkWrapper::getInstance()->startNetworkRecovery();

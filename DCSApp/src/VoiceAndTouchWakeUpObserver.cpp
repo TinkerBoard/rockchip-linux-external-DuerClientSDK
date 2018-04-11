@@ -105,12 +105,15 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
     //BDS SDK 不判断网络状态
     SoundController::getInstance()->wakeUp();
     DeviceIoWrapper::getInstance()->ledNetOff();
+    APP_INFO("VoiceAndTouchWakeUpObserver wakeupTriggered");
 
     if (is_voice_wakeup) {
+
         DeviceIoWrapper::getInstance()->setDirection(wake_dir);
         DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
         if (m_dcsSdk) {
-            m_dcsSdk->notifyOfWakeWord(endIndex, endIndex, keyword, requestId);
+            APP_INFO("VoiceAndTouchWakeUpObserver notifyOfWakeWord:%d,%d,%s,%s",beginIndex, endIndex, keyword.c_str(), requestId.c_str());
+            m_dcsSdk->notifyOfWakeWord(beginIndex, endIndex, keyword, requestId);
         }
     } else {
         DeviceIoWrapper::getInstance()->setDirection(-1);

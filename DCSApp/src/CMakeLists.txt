@@ -138,6 +138,7 @@ if(${Platform} STREQUAL Rk3229)
 	target_link_libraries(duer_linux sqlite3)
 endif()
 
+	target_link_libraries(duer_linux sqlite3 asound)
 if(${Platform} STREQUAL Sengled)
    target_link_libraries(duer_linux sqlite3 z sai_preprocess)
 endif()

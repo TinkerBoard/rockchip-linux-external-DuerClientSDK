@@ -175,7 +175,7 @@ bool ApplicationManager::setStartDebugMode() {
 #ifdef DEBUG_FLAG
     system("systemctl start android-tools-adbd.service");
 #else
-    system("/data/usr/bin/android-gadget-setup adb & /data/usr/bin/adbd");
+    system("/data/usr/bin/android-gadget-setup adb && (/data/usr/bin/adbd &)");
 #endif
 
     debugStarted();
