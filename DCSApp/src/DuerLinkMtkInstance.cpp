@@ -186,8 +186,11 @@ bool start_wpa_supplicant() {
 
     system_command("killall dhcpcd");
     system_command("killall wpa_supplicant");
+	sleep(1);
     system_command("wpa_supplicant -Dnl80211 -B -i wlan0 -c /data/cfg/wpa_supplicant.conf");
-    system_command("dhcpcd");//udhcpc -b -i wlan0 -q ");
+	system_command("dhcpcd -k wlan0");//udhcpc -b -i wlan0 -q ");
+	sleep(1);
+	system_command("dhcpcd wlan0 &");
     deviceCommonLib::deviceTools::printTickCount("network_config connect_ap end.");
 
     return true;
