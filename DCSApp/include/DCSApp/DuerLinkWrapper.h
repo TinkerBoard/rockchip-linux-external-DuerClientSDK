@@ -88,6 +88,7 @@ public:
     void startDiscoverAndBound(const std::string& client_id, const std::string& bdussfile);
 
     std::string NotifyReceivedData(const std::string& jsonPackageData, int iSessionID = 0) override;
+
     std::string notify_received_bduss(const std::string& bdussValue) override;
 
     bool sendDlpMsgToAllClients(const std::string& sendBuffer);

@@ -206,11 +206,11 @@ public:
      *     @param[in] keyword 检测到的唤醒词.
      * \endif
      */
-    std::future<bool> notifyOfWakeWord(
+    bool notifyOfWakeWord(
             uint64_t beginIndex,
             uint64_t endIndex,
-            const std::string& keyword,
-            const std::string requestId = "");
+            std::string keyword,
+            std::string requestId);
 
     static const auto INVALID_INDEX = std::numeric_limits<uint64_t>::max();
     /**

@@ -146,7 +146,7 @@ void SoundController::networkConnectFailed() {
 }
 
 void SoundController::networkSlow() {
-    audioPlay("/usr/appresources/network_slow.mp3", false, NULL, NULL, NULL);
+    audioPlay("/usr/appresources/network_slow.mp3", true, NULL, NULL, NULL);
 }
 
 void SoundController::openBluetooth(void(*callback)(void *arg), void *arg) {

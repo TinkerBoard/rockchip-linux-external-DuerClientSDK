@@ -155,7 +155,7 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
             if (is_voice_wakeup) {
                 APP_INFO("Network unconnected when Voice wakeupd:%s", keyword.c_str());
             }
-            
+
             if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_AUTH_FAILED) {
                 DeviceIoWrapper::getInstance()->setRecognizing(false);
                 SoundController::getInstance()->accountUnbound(nullptr);
