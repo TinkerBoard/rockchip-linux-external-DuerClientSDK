@@ -42,6 +42,7 @@ PcmStreamPlayer::PcmStreamPlayer(const std::string& audio_dev) : m_executor(NULL
     m_alsaCtl->init(16000, 1);
     pthread_mutex_init(&m_playMutex, NULL);
     pthread_cond_init(&m_playCond, NULL);
+    pthread_mutex_init(&m_memMutex, NULL);
 
     pthread_create(&m_playThread, NULL, playFunc, this);
 }
@@ -69,6 +70,7 @@ PcmStreamPlayer::~PcmStreamPlayer() {
 
     pthread_mutex_destroy(&m_playMutex);
     pthread_cond_destroy(&m_playCond);
+    pthread_mutex_destroy(&m_memMutex);
 }
 
 void PcmStreamPlayer::registerListener(TtsPlayerListener *listener) {
@@ -92,8 +94,10 @@ void PcmStreamPlayer::pushData(const char *data, unsigned int len) {
     if (m_currentLen + len > m_spaceLen) {
         char *tmp = (char *)malloc(m_spaceLen + PCM_BUFFER_LEN);
         memcpy(tmp, m_pcmBuffer, m_currentLen);
+        pthread_mutex_lock(&m_memMutex);
         free(m_pcmBuffer);
         m_pcmBuffer = tmp;
+        pthread_mutex_unlock(&m_memMutex);
         m_spaceLen += PCM_BUFFER_LEN;
     }
     memcpy(m_pcmBuffer + m_currentLen, data, len);
@@ -148,12 +152,16 @@ void* PcmStreamPlayer::playFunc(void *arg) {
         int playLen = 0;
         while (!player->m_stopFlag) {
             if (playLen + PLAY_INCREMENT_LEN < player->m_currentLen) {
+                pthread_mutex_lock(&player->m_memMutex);
                 player->play_stream(1, player->m_pcmBuffer + playLen, PLAY_INCREMENT_LEN);
+                pthread_mutex_unlock(&player->m_memMutex);
                 playLen += PLAY_INCREMENT_LEN;
             } else if (player->m_pushingFlag) {
                 usleep(WAIT_TIME_INTERVAL_MS);
             } else {
+                pthread_mutex_lock(&player->m_memMutex);
                 player->play_stream(1, player->m_pcmBuffer + playLen, player->m_currentLen - playLen);
+                pthread_mutex_unlock(&player->m_memMutex);
                 break;
             }
         }

@@ -81,6 +81,7 @@ private:
     unsigned int m_spaceLen;
     pthread_t m_playThread;
     pthread_mutex_t m_playMutex;
+    pthread_mutex_t m_memMutex;
     pthread_cond_t m_playCond;
     StreamPool m_streamPool;
     bool m_pushingFlag;
