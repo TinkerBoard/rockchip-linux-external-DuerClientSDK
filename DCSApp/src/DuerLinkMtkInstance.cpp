@@ -184,6 +184,7 @@ bool start_wpa_supplicant() {
 
     deviceCommonLib::deviceTools::printTickCount("network_config connect_ap begin.");
 
+	system_command("ifconfig wlan0 0.0.0.0");
     system_command("killall dhcpcd");
     system_command("killall wpa_supplicant");
 	sleep(1);
