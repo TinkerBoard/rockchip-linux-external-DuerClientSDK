@@ -60,6 +60,24 @@ void DCSKeyHandler::keyEventLoop()
           m_devIoWrapper->callback(DeviceInput::VOLUME_CHANGED, &volume_step, 0);
         }
         break;
+      case FUNC_KEY_VOL_UP:
+        {
+          static int volume_step = 10;//step:8,1~12
+          m_devIoWrapper->callback(DeviceInput::KEY_VOLUME_UP, &volume_step, 0);
+        }
+        break;
+      case FUNC_KEY_VOL_DOWN:
+        {
+          static int volume_step = 10;//step:8,1~12
+          m_devIoWrapper->callback(DeviceInput::KEY_VOLUME_DOWN, &volume_step, 0);
+        }
+        break;
+      case FUNC_KEY_MIC_MUTE:
+        {
+            printf("FUNC_KEY_MIC_MUTE\n");
+            m_devIoWrapper->callback(DeviceInput::KEY_MIC_MUTE, NULL, 0);
+        }
+        break;
       default:break;
     }
   }

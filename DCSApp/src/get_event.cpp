@@ -106,7 +106,7 @@ volatile enum alexa_mode alexa_current_mode = ALEXA_NORMAL_MODE;
 
 volatile enum alexa_ext_mode alexa_current_ext_mode = ALEXA_EXT_MODE_NONE;
 
-#if 1
+#if 0
 struct alexa_key support_keys [FUNC_LAST_ID] ={
     {207/*KEY_WAKEUP*/, 0, 1, enter_wakeup_mode, {0,0}},
     {207/*KEY_WIFI_MODE*/, 1, 1, enter_wifi_bt_mode_with_onekey, {0,0}},
@@ -137,7 +137,7 @@ static int volume_step_up()
     //the actually volume process is finished in event_process
     if (++current_vol_step >= NUMBER_OF_LEDS - 1)
         current_vol_step = NUMBER_OF_LEDS - 1;
-    is_volume_changed = 1;
+    //is_volume_changed = 1;
     printf("FUNC_KEY_VOL_UP is pressed, step is %d, alexa vol is %d\n",current_vol_step, volume_controls[current_vol_step].alex_vol);
     return FUNC_KEY_VOL_UP;
 }
@@ -147,7 +147,7 @@ static int volume_step_down()
     //the actually volume process is finished in event_process
     if (--current_vol_step <= 0)
         current_vol_step = 0;
-    is_volume_changed = 1;
+    //is_volume_changed = 1;
     printf("FUNC_KEY_VOL_DOWN is pressed, step is %d, alexa vol is %d\n",current_vol_step, volume_controls[current_vol_step].alex_vol);
     return FUNC_KEY_VOL_DOWN;
 }
@@ -157,11 +157,7 @@ static int mute_mic()
 {
     int ret;
 
-    if (mic_mode == FUNC_KEY_MIC_UNMUTE) {
-        ret = FUNC_KEY_MIC_MUTE;
-    }else {
-        ret = FUNC_KEY_MIC_UNMUTE;
-    }
+    ret = FUNC_KEY_MIC_MUTE;
 
     mic_mode = ret;
 

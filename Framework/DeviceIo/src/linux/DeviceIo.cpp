@@ -310,7 +310,7 @@ int DeviceIo::controlLed(LedState cmd, void *data, int len) {
             g_infoled->led_open(MODE_VOLUME,*(int*)data / 10); 
             break;
         case LedState::LED_MUTE:
-            g_infoled->led_open(MODE_VOLUME,0); 
+            g_infoled->led_open(MODE_MIC_MUTE,0);
             break;
 
         case LedState::LED_DISABLE_MIC:
