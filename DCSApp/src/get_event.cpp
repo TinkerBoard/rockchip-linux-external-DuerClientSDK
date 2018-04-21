@@ -64,7 +64,7 @@ pthread_cond_t ev_pending;
 volatile int ev_unprocessed;
 
 static char rk29_keypad[] = {"rk29-keypad"};
-static char gpio_keys[] = {"gpio_keys"};
+static char gpio_keys[] = {"gpio-keys"};
 static char rk29_rotary[] = {"rotary"};
 static char adc_keys[] = {"adc-keys"};
 static char rk8xx_pwrkey[] = {"rk8xx_pwrkey"};
@@ -365,8 +365,8 @@ static int find_event_dev(int event_type)
 
     for (i = 0; i < ndev; i++)
     {
-	int j;
-	int events_nums = sizeof(support_event)/sizeof(struct alexa_support_event_type);
+        int j;
+        int events_nums = sizeof(support_event)/sizeof(struct alexa_support_event_type);
         snprintf(fname, sizeof(fname),
                 "%s/%s", DEV_INPUT_EVENT, namelist[i]->d_name);
         fd = open(fname, O_RDONLY);
@@ -374,25 +374,85 @@ static int find_event_dev(int event_type)
             continue;
         ioctl(fd, EVIOCGNAME(sizeof(name)), name);
         fprintf(stderr, "%s:	%s,j=%d\n", fname, name, j);
-	for (j = 0; j < events_nums; j++) {
+        for (j = 0; j < events_nums; j++) {
             if (support_event[j].event_type == event_type && strstr(name, support_event[j].name)) {
                 /* find according event device */
                 printf("find event device:%s\n",namelist[i]->d_name);
                 ret = fd;
             	print_device_info(fd);
-		break;
+                break;
             }
-	}
-	if (ret < 0)
-		close(fd);
-
+        }
         free(namelist[i]);
+        if (ret < 0)
+            close(fd);
+        else
+            break;
     }
 
     if (ret <= 0)
         printf("Can't find device by event_type[%d,%s]\n",event_type,support_event[event_type].name);
     free(namelist);
     return ret;
+}
+
+/**
+ * Scans all /dev/input/event*, open muli event devices
+ * by specifying event type.
+ * @param fds: the address that fds store
+ * @return fd counts.
+ .
+ */
+static int find_multi_event_dev(int event_type, int *fds)
+{
+    struct dirent **namelist;
+    int i, ndev;
+    char fname[64];
+    int fd = -1, ret = -1;
+    char name[256] = "???";
+    int count = 0;
+
+    if (event_type < EVENT_START || event_type > EVENT_END) {
+        fprintf(stderr, "Invalid event type:%d\n", event_type);
+        return 0;
+    }
+
+    ndev = scandir(DEV_INPUT_EVENT, &namelist, is_event_device, versionsort);
+    if (ndev <= 0)
+        return 0;
+
+    for (i = 0; i < ndev; i++)
+    {
+        int j;
+        int events_nums = sizeof(support_event)/sizeof(struct alexa_support_event_type);
+        snprintf(fname, sizeof(fname),
+                "%s/%s", DEV_INPUT_EVENT, namelist[i]->d_name);
+        fd = open(fname, O_RDONLY);
+        if (fd < 0)
+            continue;
+        ioctl(fd, EVIOCGNAME(sizeof(name)), name);
+        fprintf(stderr, "%s:	%s,j=%d\n", fname, name, j);
+        ret = -1;
+        for (j = 0; j < events_nums; j++) {
+            if (support_event[j].event_type == event_type && strstr(name, support_event[j].name)) {
+                /* find according event device */
+                printf("find event device:%s\n",namelist[i]->d_name);
+                ret = fd;
+                print_device_info(fd);
+                break;
+            }
+        }
+        if (ret < 0)
+            close(fd);
+        else
+            fds[count++] = fd;
+        free(namelist[i]);
+    }
+
+    if (count == 0)
+        printf("Can't find device by event_type[%d,%s]\n",event_type,support_event[event_type].name);
+    free(namelist);
+    return count;
 }
 
 int event_process(void)
@@ -540,38 +600,35 @@ void alexa_volume_set_mute()
 
 void *event_read_thread(void * arg)
 {
-    int key_fd,vol_fd,max_fd;
+    int key_fds[10],vol_fd,max_fd;
     int rd, ret;
-    unsigned int i, j;
+    unsigned int i, j, k;
     fd_set rdfs;
     struct input_event ev[64];
     struct timeval sel_timeout_tv;
+    int key_fds_count;
 
     if (getuid() != 0) {
         fprintf(stderr, "Not running as root, no devices may be available.\n");
         return NULL;
     }
 
-    key_fd = find_event_dev(KEY_EVENT);
-    if(!key_fd) {
+    key_fds_count = find_multi_event_dev(KEY_EVENT, key_fds);
+
+    if(key_fds_count <= 0) {
         printf("-------------- key event thread exit because event key fd is null ------------\n");
-        //		return NULL;
     }
 
     vol_fd = find_event_dev(ROTARY_EVENT);
     if(!vol_fd) {
         printf("-------------- key event thread exit because event volume fd is null ------------\n");
-        //		return NULL;
     }
 
-    if (key_fd > 0 && vol_fd > 0) {
-        max_fd = (key_fd > vol_fd) ? key_fd : vol_fd;
-    } else if (key_fd > 0) {
-        fprintf(stderr, "[get_event] didn't find any valid rotary event fd\n");
-        max_fd = key_fd;
-    } else if(vol_fd > 0) {
-        fprintf(stderr, "[get_event] didn't find any valid key event fd\n");
+    if (key_fds_count > 0 || vol_fd > 0) {
         max_fd = vol_fd;
+        for (i = 0 ; i < key_fds_count; i++)
+            if (max_fd < key_fds[i])
+                max_fd = key_fds[i];
     } else {
         fprintf(stderr, "didn't find any valid key fd and valid rotary fd \n");
         return NULL;
@@ -585,8 +642,9 @@ void *event_read_thread(void * arg)
         sel_timeout_tv.tv_usec = 300000;
 
         FD_ZERO(&rdfs);
-        if(key_fd > 0)
-            FD_SET(key_fd, &rdfs);
+        if(key_fds_count > 0)
+            for (i = 0 ; i < key_fds_count; i++)
+                FD_SET(key_fds[i], &rdfs);
         if(vol_fd > 0)
             FD_SET(vol_fd, &rdfs);
 
@@ -657,7 +715,9 @@ void *event_read_thread(void * arg)
             continue;
         }
 
-        if (key_fd > 0) {
+        k = 0;
+        while (k < key_fds_count) {
+            int key_fd = key_fds[k++];
             if (FD_ISSET(key_fd, &rdfs)) {
                 rd = read(key_fd, ev, sizeof(ev));
 
