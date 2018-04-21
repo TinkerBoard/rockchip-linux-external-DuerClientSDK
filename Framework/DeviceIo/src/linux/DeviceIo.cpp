@@ -28,6 +28,10 @@ namespace framework {
 #define AUDIO_MIN_VOLUME                0
 #define AUDIO_MAX_VOLUME                1000
 
+#define SOFTVOL /*should play a music before ctl the softvol*/
+#define SOFTVOL_CARD "default"
+#define SOFTVOL_ELEM "name='Master Playback Volume'"
+
 typedef struct {
     int     volume;
     bool    is_mute;
@@ -37,6 +41,102 @@ static snd_mixer_t*      mixer_fd   = nullptr;
 static snd_mixer_elem_t* mixer_elem = nullptr;
 static user_volume_t    user_volume = {0, false};
 static pthread_mutex_t  user_volume_mutex;
+
+static int cset(char *value_string, int roflag)
+{
+    int err;
+    int ret = 0;
+    static snd_ctl_t *handle = NULL;
+    snd_ctl_elem_info_t *info;
+    snd_ctl_elem_id_t *id;
+    snd_ctl_elem_value_t *control;
+    snd_ctl_elem_info_alloca(&info);
+    snd_ctl_elem_id_alloca(&id);
+    snd_ctl_elem_value_alloca(&control);
+    char card[64] = SOFTVOL_CARD;
+    int keep_handle = 0;
+
+    if (snd_ctl_ascii_elem_id_parse(id, SOFTVOL_ELEM)) {
+        fprintf(stderr, "Wrong control identifier: %s\n", SOFTVOL_ELEM);
+        return -EINVAL;
+    }
+
+    if (handle == NULL &&
+        (err = snd_ctl_open(&handle, card, 0)) < 0) {
+        APP_ERROR("Control %s open error: %d\n", card, err);
+        return err;
+    }
+    snd_ctl_elem_info_set_id(info, id);
+    if ((err = snd_ctl_elem_info(handle, info)) < 0) {
+        APP_ERROR("Cannot find the given element from control %s\n", card);
+        if (! keep_handle) {
+            snd_ctl_close(handle);
+            handle = NULL;
+        }
+        return err;
+    }
+    snd_ctl_elem_info_get_id(info, id);     /* FIXME: Remove it when hctl find works ok !!! */
+    if (!roflag) {
+        snd_ctl_elem_value_set_id(control, id);
+        if ((err = snd_ctl_elem_read(handle, control)) < 0) {
+            APP_ERROR("Cannot read the given element from control %s\n", card);
+            if (! keep_handle) {
+                snd_ctl_close(handle);
+                handle = NULL;
+            }
+            return err;
+        }
+        err = snd_ctl_ascii_value_parse(handle, control, info, value_string);
+        if (err < 0) {
+            APP_ERROR("Control %s parse error: %d\n", card, err);
+            if (!keep_handle) {
+                snd_ctl_close(handle);
+                handle = NULL;
+            }
+            return  err;
+        }
+        if ((err = snd_ctl_elem_write(handle, control)) < 0) {
+            APP_ERROR("Control %s element write error: %d\n", card, err);
+            if (!keep_handle) {
+                snd_ctl_close(handle);
+                handle = NULL;
+            }
+            return err;
+        }
+    } else {
+        int vol_l, vol_r;
+        snd_ctl_elem_value_set_id(control, id);
+        if ((err = snd_ctl_elem_read(handle, control)) < 0) {
+            APP_ERROR("Cannot read the given element from control %s\n", card);
+            if (! keep_handle) {
+                snd_ctl_close(handle);
+                handle = NULL;
+            }
+            return err;
+        }
+        vol_l = snd_ctl_elem_value_get_integer(control, 0);
+        vol_r = snd_ctl_elem_value_get_integer(control, 1);
+        APP_ERROR("%s:  cget %d, %d!\n", __func__, vol_l, vol_r);
+        ret = (vol_l + vol_r) >> 1;
+    }
+
+    if (! keep_handle) {
+        snd_ctl_close(handle);
+        handle = NULL;
+    }
+    return ret;
+}
+
+static void softvol_set(int vol) {
+    char value[128] = {0};
+
+    sprintf(value, "%d", vol);
+    cset(value, 0);
+}
+
+static int softvol_get() {
+    return cset(NULL, 1);
+}
 
 static void mixer_exit() {
     if (mixer_fd != nullptr) {
@@ -48,6 +148,10 @@ static void mixer_exit() {
 }
 
 static int mixer_init(const char* card, const char* elem) {
+#ifdef SOFTVOL
+    APP_ERROR("mixer init\n");
+    return 0;
+#endif
     const char* _card = card ? card : "default";
 #ifdef MTK8516
     const char* _elem = elem ? elem : "TAS5760";
@@ -134,6 +238,8 @@ static unsigned int mixer_get_volume() {
 static void user_set_volume(double user_vol) {
     double k, audio_vol;
 
+    APP_ERROR("%s, %lf\n", __func__, user_vol);
+
     user_vol = (user_vol > USER_VOL_MAX) ? USER_VOL_MAX : user_vol;
     user_vol = (user_vol < USER_VOL_MIN) ? USER_VOL_MIN : user_vol;
 
@@ -145,17 +251,27 @@ static void user_set_volume(double user_vol) {
         user_volume.volume = user_vol;
     }
 
+#ifdef SOFTVOL
+    softvol_set(user_vol);
+#else
     k = (double)AUDIO_MAX_VOLUME / USER_VOL_MAX;
 
     audio_vol = k * user_vol;
 
     mixer_set_volume(audio_vol);
+#endif
 }
 
 static int user_get_volume() {
     double k, offset, audio_vol;
     int user_vol = 0;
 
+#ifdef SOFTVOL
+    user_vol = softvol_get();
+
+    APP_ERROR("%s: %d\n", __func__, user_vol);
+    return user_vol;
+#else
     audio_vol = mixer_get_volume();
 
     k = (double)(USER_VOL_MAX - USER_VOL_MIN) / (AUDIO_MAX_VOLUME - AUDIO_MIN_VOLUME);
@@ -167,6 +283,7 @@ static int user_get_volume() {
     user_vol = (user_vol < USER_VOL_MIN) ? USER_VOL_MIN : user_vol;
 
     APP_DEBUG("[%s] audio_vol:%f  user_vol:%d\n", __FUNCTION__, audio_vol, user_vol);
+#endif
 
     return user_vol;
 }
@@ -389,7 +506,11 @@ int DeviceIo::setMute(bool mute) {
 
     if (mute && !user_volume.is_mute) {
         user_volume.is_mute = true;
+#ifdef SOFTVOL
+        softvol_set(0);
+#else
         mixer_set_volume(0);
+#endif
         ret = 0;
     } else if (!mute && user_volume.is_mute) {
         /* set volume will unmute */
