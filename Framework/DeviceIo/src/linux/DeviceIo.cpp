@@ -278,7 +278,9 @@ int DeviceIo::controlLed(LedState cmd, void *data, int len) {
             break;
 
         case LedState::LED_WAKE_UP_DOA:    // param -180 ~ 180
-            g_infoled->led_open(MODE_VP_WAKEUP,0);
+            APP_DEBUG("LED_WAKE_UP_DOA:%d\n",*(int*)data);
+            g_infoled->led_open(MODE_VOLUME,*(int*)data / 30);
+            //g_infoled->led_open(MODE_VP_WAKEUP,0);
             break;
         case LedState::LED_WAKE_UP:        // no param
             g_infoled->led_open(MODE_VP_WAKEUP,0);
