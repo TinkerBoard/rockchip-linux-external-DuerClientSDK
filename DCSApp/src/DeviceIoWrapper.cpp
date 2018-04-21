@@ -760,6 +760,7 @@ void DeviceIoWrapper::enterSleepMode(bool isLedLightOn) {
         ledMute();
     }
     muteChanged();
+    system("echo mem > /sys/power/state");
 }
 
 void DeviceIoWrapper::exitSleepMode() {
