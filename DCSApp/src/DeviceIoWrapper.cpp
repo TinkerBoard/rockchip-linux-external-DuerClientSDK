@@ -231,6 +231,7 @@ void DeviceIoWrapper::callback(DeviceInput event, void *data, int len) {
         case DeviceInput::KEY_ONE_LONG:
         case DeviceInput::KEY_ENTER_AP:
             if (m_isRecoveryingNetwork) {
+                DuerLinkWrapper::getInstance()->stopNetworkRecovery();
                 break;
             }
             if (!m_isTouchStartNetworkConfig) {

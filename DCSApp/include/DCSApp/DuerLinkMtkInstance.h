@@ -117,6 +117,7 @@ public:
     void set_monitor_observer(NetWorkPingStatusObserver *ping_listener);
 
     void start_network_recovery();
+    void stop_network_recovery();
     void start_discover_and_bound();
 
     void set_dlp_data_observer(DuerLinkReceivedDataObserver* observer);
@@ -193,6 +194,7 @@ private:
     duerLink::NetworkConfigStatusObserver *m_pMtkConfigObserver;
 
     operation_type m_operation_type;
+    int m_stop_network_recovery;
 };
 
 }

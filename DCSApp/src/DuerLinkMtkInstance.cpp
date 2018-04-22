@@ -538,6 +538,7 @@ DuerLinkMtkInstance::DuerLinkMtkInstance() {
     m_nreceived = 0;
     m_icmp_seq = 0;
     m_pMtkConfigObserver = NULL;
+    m_stop_network_recovery = false;
 
     m_operation_type = operation_type::EOperationStart;
 
@@ -756,6 +757,10 @@ void DuerLinkMtkInstance::start_network_recovery() {
 #endif
 }
 
+void DuerLinkMtkInstance::stop_network_recovery() {
+    m_stop_network_recovery = true;
+}
+
 void DuerLinkMtkInstance::start_discover_and_bound() {
     duerLinkSdk::get_instance()->start_device_discover_and_bound();
 }
@@ -813,7 +818,7 @@ bool DuerLinkMtkInstance::check_recovery_network_status() {
     bool recovery = false;
 
     while(!(recovery = ping_network(false))) {
-        if (network_check_count == DUERLINK_NETWORK_CONFIGURE_PING_COUNT) {
+        if (m_stop_network_recovery || network_check_count == DUERLINK_NETWORK_CONFIGURE_PING_COUNT) {
             APP_ERROR("Network recovery ping failed.");
 
             break;
@@ -823,7 +828,11 @@ bool DuerLinkMtkInstance::check_recovery_network_status() {
         network_check_count++;
     }
 
-    if (recovery) {
+    if (m_stop_network_recovery) {
+        APP_INFO("Network recovery cancel.");
+        start_network_config(DUERLINK_AUTO_CONFIG_TIMEOUT);
+        return true;
+    } else if (recovery) {
         if (nullptr != m_pMtkConfigObserver) {
             APP_INFO("Network recovery succed.");
 

@@ -73,6 +73,8 @@ public:
 
     void startNetworkRecovery();
 
+    void stopNetworkRecovery();
+
     bool startNetworkConfig();
 
     void stopNetworkConfig();

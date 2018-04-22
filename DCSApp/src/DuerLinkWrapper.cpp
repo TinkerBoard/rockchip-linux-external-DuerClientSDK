@@ -104,6 +104,10 @@ void DuerLinkWrapper::startNetworkRecovery() {
     DuerLinkMtkInstance::get_instance()->start_network_monitor();
 }
 
+void DuerLinkWrapper::stopNetworkRecovery() {
+    DuerLinkMtkInstance::get_instance()->stop_network_recovery();
+}
+
 bool DuerLinkWrapper::startNetworkConfig() {
     return DuerLinkMtkInstance::get_instance()->start_network_config(5*60);
 }
