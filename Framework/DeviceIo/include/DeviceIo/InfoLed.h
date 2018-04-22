@@ -149,6 +149,7 @@ private:
     State m_oldState;
     State m_ledState;
     int m_currentVolume;
+    int m_wakeup_angle;/*angle % 30 = [0 - 11]*/
     int m_oldVolume;
     volatile int m_scrollLedNum;
     std::atomic<bool> m_isVolAdjust;

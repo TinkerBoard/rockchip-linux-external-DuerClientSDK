@@ -394,13 +394,19 @@ int DeviceIo::controlLed(LedState cmd, void *data, int len) {
             g_infoled->led_open(MODE_OFF,0);
             break;
 
-        case LedState::LED_WAKE_UP_DOA:    // param -180 ~ 180
-            APP_DEBUG("LED_WAKE_UP_DOA:%d\n",*(int*)data);
-            g_infoled->led_open(MODE_VOLUME,*(int*)data / 30);
-            //g_infoled->led_open(MODE_VP_WAKEUP,0);
+        case LedState::LED_WAKE_UP_DOA:    // param 0 ~ 360
+            {
+                APP_ERROR("LED_WAKE_UP_DOA:%d\n",*(int*)data);
+                /*RK3308 EVB DMIC, 逆向, 且偏移60度*/
+                int angle = (360 - *(int *)data + 60) % 360;
+                if ((angle % 30) < 15)
+                    g_infoled->led_open(MODE_VP_WAKEUP, angle / 30);
+                else
+                    g_infoled->led_open(MODE_VP_WAKEUP, (angle / 30 + 1) % 12);
+            }
             break;
         case LedState::LED_WAKE_UP:        // no param
-            g_infoled->led_open(MODE_VP_WAKEUP,0);
+            g_infoled->led_open(MODE_VP_WAKEUP,0xff);
             break;
         case LedState::LED_SPEECH_PARSE:
             g_infoled->led_open(MODE_VP,0);

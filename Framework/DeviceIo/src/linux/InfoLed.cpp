@@ -538,7 +538,10 @@ void InfoLed::mainloop() {
             break;
         case State::VP_WAKEUP:
             fprintf(stderr,"-----mode VP_WAKEUP-------\n");
-            leds_multi_set_breath(LED_MULTI_PURE_COLOR_WHITE ,LED_MULTI_PURE_COLOR_BLACK, 200, 8);
+            if (m_wakeup_angle == 0xff)
+                leds_multi_set_breath(LED_MULTI_PURE_COLOR_WHITE ,LED_MULTI_PURE_COLOR_BLACK, 200, 8);
+            else
+                leds_multi_certain_on((1 << m_wakeup_angle), LED_MULTI_PURE_COLOR_WHITE);
             setState(State::IDLE);
             break;
         case State::VP_PROCESS:
@@ -631,6 +634,7 @@ void InfoLed::led_open(int mode, int val) {
         mStateChange.notify_one();
         break;
     case MODE_VP_WAKEUP:
+        m_wakeup_angle = val;
         setState(State::VP_WAKEUP);
         mStateChange.notify_one();
         break;
