@@ -84,6 +84,7 @@ struct alexa_support_event_type support_event[] = {
 volatile int alexa_current_vol = ALEXA_DEFAULT_VOLUME_VAL;
 volatile int current_vol_step = ALEXA_DEFAULT_VOLUME_VAL/NUMBER_OF_LEDS;
 int is_volume_changed = 0;
+int is_volume_change_up = 0;
 struct alexa_vol_control volume_controls[NUMBER_OF_LEDS] = {
     {1, ALEXA_VOL_EVERRY_STEP, 2}, {2, ALEXA_VOL_EVERRY_STEP*2, 4},
     {3, ALEXA_VOL_EVERRY_STEP*3, 6},{4, ALEXA_VOL_EVERRY_STEP*4, 8},
@@ -532,16 +533,10 @@ int event_process(void)
     }
 
     if (is_volume_changed) {
-        ret = FUNC_VOLUME_CHANGE;
-        //if current_vol_step < 0 means we need to mute the speaker
-        if (current_vol_step < 0) {
-
-        }
-
-        //control the codec volume output
-        if (codec_set_vol(volume_controls[current_vol_step].codec_vol)) {
-            printf("%s,current_vol_step:%d,vol:%d codec set volume failed\n",__func__,current_vol_step,volume_controls[current_vol_step].codec_vol);
-        }
+        if (is_volume_change_up)
+            ret = FUNC_KEY_VOL_UP;
+        else
+            ret = FUNC_KEY_VOL_DOWN;
         is_volume_changed = 0;
     }
 
@@ -792,9 +787,11 @@ void *event_read_thread(void * arg)
                         if (ev[i].value == 1) {
                             current_vol_step = ((current_vol_step + 1) > (NUMBER_OF_LEDS - 1)) ? (NUMBER_OF_LEDS - 1):(current_vol_step + 1);
                             ev_signaled = 1;
+                            is_volume_change_up = 0;
                         } else if (ev[i].value == -1) {
                             current_vol_step = ((current_vol_step - 1) < 0) ? 0:(current_vol_step - 1);
                             ev_signaled = 1;
+                            is_volume_change_up = 1;
                         } else
                             printf("rotary: illigal rotary input value\n");
                     }
