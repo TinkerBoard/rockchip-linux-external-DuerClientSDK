@@ -40,7 +40,7 @@
 
 #define PACKET_SIZE         4096
 #define MAX_WAIT_TIME       1;//5
-#define MAX_PACKETS_COUNT   4
+#define MAX_PACKETS_COUNT   20
 #define MAX_PING_INTERVAL   300
 #define PING_DEST_HOST1       "114.114.114.114"
 #define PING_DEST_HOST2       "8.8.8.8"
