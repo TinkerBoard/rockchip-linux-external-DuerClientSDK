@@ -39,19 +39,16 @@ void ApplicationManager::onDialogUXStateChanged(DialogUXState state) {
     if (m_dcsSdk) {
         switch (state) {
             case DialogUXState::MEDIA_PLAYING:
-#if 0
 #ifdef KITTAI_KEY_WORD_DETECTOR
                 m_dcsSdk->enterPlayMusicScene();
-#endif
 #endif
                 break;
             case DialogUXState::MEDIA_STOPPED:
             case DialogUXState::MEDIA_FINISHED:
-                if (!DeviceIoWrapper::getInstance()->isBtPlaying()) {
-#if 0
+                if (!(DeviceIoWrapper::getInstance()->isBtPlaying()
+                || DeviceIoWrapper::getInstance()->isDlnaPlaying())) {
 #ifdef KITTAI_KEY_WORD_DETECTOR
                     m_dcsSdk->exitPlayMusicScene();
-#endif
 #endif
                 }
                 break;
@@ -80,8 +77,8 @@ void ApplicationManager::onReceivedDirective(const std::string &contextId, const
     //APP_INFO("ApplicationManager onReceivedDirective:%s", message.c_str());
     std::string playbackctl_namespace = "ai.dueros.device_interface.speaker_controller";
     std::vector<std::string> filter_namespace;
-    filter_namespace.push_back("ai.dueros.device_interface.voice_output");
-    filter_namespace.push_back("ai.dueros.device_interface.audio_player");
+    filter_namespace.emplace_back("ai.dueros.device_interface.voice_output");
+    filter_namespace.emplace_back("ai.dueros.device_interface.audio_player");
     rapidjson::Document root;
     root.Parse<0>(message.c_str());
     if (!root.HasParseError()) {
@@ -100,7 +97,7 @@ void ApplicationManager::onReceivedDirective(const std::string &contextId, const
                     break;
                 }
             }
-            if (headerNamespace.compare(playbackctl_namespace) == 0) {
+            if (headerNamespace == playbackctl_namespace) {
                 if (!m_isFirstReceiveMsg) {
                     m_isFirstReceiveMsg = true;
                 }
@@ -143,10 +140,14 @@ void ApplicationManager::onConnectionStatusChanged(const Status status, const Ch
     onStateChanged();
 }
 
+void ApplicationManager::onSpeechAsrCanceled() {
+    DeviceIoWrapper::getInstance()->ledSpeechOff();
+}
+
 void ApplicationManager::setSpeakerVolume(int64_t volume) {
     APP_INFO("ApplicationManager setSpeakerVolume: %ld", volume);
-    DeviceIoWrapper::getInstance()->setCurrentVolume(volume);
-    Configuration::getInstance()->setCommVol(volume);
+    DeviceIoWrapper::getInstance()->setCurrentVolume((unsigned int)volume);
+    Configuration::getInstance()->setCommVol((unsigned int)volume);
 }
 
 void ApplicationManager::setSpeakerMute(bool isMute) {
@@ -172,25 +173,31 @@ bool ApplicationManager::getSpeakerMuteStatus() {
 bool ApplicationManager::setStartDebugMode() {
     APP_INFO("ApplicationManager setStartDebug");
     LOGGER_ENABLE(true);
-#ifdef DEBUG_FLAG
-    system("systemctl start android-tools-adbd.service");
-#else
-    system("/data/usr/bin/android-gadget-setup adb && (/data/usr/bin/adbd &)");
-#endif
+    // 当前版本暂时不禁止adb
+//    if (Configuration::getInstance()->getDebug()) {
+//        APP_INFO("ApplicationManager setStartDebug in debug mode");
+//        system("systemctl start android-tools-adbd.service");
+//    } else {
+//        APP_INFO("ApplicationManager setStartDebug in release mode");
+//        system("/data/usr/bin/android-gadget-setup adb && ( /data/usr/bin/adbd & )");
+//    }
 
     debugStarted();
+    return true;
 }
 
 bool ApplicationManager::setStopDebugMode() {
     APP_INFO("ApplicationManager setStopDebug");
     LOGGER_ENABLE(false);
-#ifdef DEBUG_FLAG
-    system("systemctl stop android-tools-adbd.service");
-#else
-    system("killall -9 adbd");
-#endif
+    // 当前版本暂时不禁止adb
+//    if (Configuration::getInstance()->getDebug()) {
+//        system("systemctl stop android-tools-adbd.service");
+//    } else {
+//        system("killall -9 adbd");
+//    }
 
     debugStoped();
+    return true;
 }
 
 void ApplicationManager::debugStarted() {
@@ -240,8 +247,10 @@ void ApplicationManager::queryCurrentVersion() {
     std::string version_code = DeviceIoWrapper::getInstance()->getVersion();
     std::string version_str = QUERY_CURRENT_VERSION + version_code;
 #ifdef LOCALTTS
+#ifndef Sengled
     DeviceIoWrapper::getInstance()->ledTts();
     SoundController::getInstance()->playTts(version_str, true, ledTtsOffCallback);
+#endif
 #endif
 }
 
@@ -254,55 +263,59 @@ void ApplicationManager::powerSleep() {
 
 void ApplicationManager::powerShutdown() {
 #ifdef LOCALTTS
+#ifndef Sengled
     DeviceIoWrapper::getInstance()->ledTts();
     SoundController::getInstance()->playTts(POWER_SHUTDOWN, true, ledTtsOffCallback);
+#endif
 #endif
 }
 
 void ApplicationManager::powerReboot() {
 #ifdef LOCALTTS
+#ifndef Sengled
     DeviceIoWrapper::getInstance()->ledTts();
     SoundController::getInstance()->playTts(POWER_REBOOT, true, ledTtsOffCallback);
+#endif
 #endif
 }
 
 void ApplicationManager::informSdkConnectionStatus(duerOSDcsSDK::sdkInterfaces::SdkConnectionState sdkConnectionStatus) {
     switch (sdkConnectionStatus) {
-        case duerOSDcsSDK::sdkInterfaces::SdkConnectionState::SDK_AUTH_FAILED:
-            APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_AUTH_FAILED");
+    case duerOSDcsSDK::sdkInterfaces::SdkConnectionState::SDK_AUTH_FAILED:
+        APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_AUTH_FAILED");
 #ifdef Box86
-            if (m_dcsSdk && m_dcsSdk->isOAuthByPassPair()) {
-                DeviceIoWrapper::getInstance()->ledNetLoginFailed();
-                SoundController::getInstance()->accountUnbound(ApplicationManager::loginFailed);
-            }
+        if (m_dcsSdk && m_dcsSdk->isOAuthByPassPair()) {
+            DeviceIoWrapper::getInstance()->ledNetLoginFailed();
+            SoundController::getInstance()->accountUnbound(ApplicationManager::loginFailed);
+        }
 #else
-            DeviceIoWrapper::getInstance()->ledNetConnectFailed();
-            SoundController::getInstance()->accountUnbound(NULL);
+        DeviceIoWrapper::getInstance()->ledNetConnectFailed();
+        SoundController::getInstance()->accountUnbound(nullptr);
 #endif
-            break;
+        break;
 
-        case duerOSDcsSDK::sdkInterfaces::SdkConnectionState::SDK_AUTH_SUCCEED:
-            APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_AUTH_SUCCEED");
-            break;
+    case duerOSDcsSDK::sdkInterfaces::SdkConnectionState::SDK_AUTH_SUCCEED:
+        APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_AUTH_SUCCEED");
+        break;
 
-        case duerOSDcsSDK::sdkInterfaces::SdkConnectionState::SDK_CONNECT_FAILED:
-            APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_CONNECT_FAILED");
-            break;
+    case duerOSDcsSDK::sdkInterfaces::SdkConnectionState::SDK_CONNECT_FAILED:
+        APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_CONNECT_FAILED");
+        break;
 
-        case duerOSDcsSDK::sdkInterfaces::SdkConnectionState::SDK_CONNECT_SUCCEED:
-            APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_CONNECT_SUCCEED");
-            if (DuerLinkWrapper::getInstance()->isFirstNetworkReady() || DuerLinkWrapper::getInstance()->isFromConfigNetwork()) {
-                APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_CONNECT_SUCCEED networkLinkOrRecoverySuccess");
-                DuerLinkWrapper::getInstance()->networkLinkOrRecoverySuccess();
-                /// because app is working no notify network link
-                DuerLinkWrapper::getInstance()->setFirstNetworkReady(false);
-                /// because app is working no notify network link, but after config network must notify
-                DuerLinkWrapper::getInstance()->setFromConfigNetwork(false);
-            }
-            break;
+    case duerOSDcsSDK::sdkInterfaces::SdkConnectionState::SDK_CONNECT_SUCCEED:
+        APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_CONNECT_SUCCEED");
+        if (DuerLinkWrapper::getInstance()->isFirstNetworkReady() || DuerLinkWrapper::getInstance()->isFromConfigNetwork()) {
+            APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_CONNECT_SUCCEED networkLinkOrRecoverySuccess");
+            DuerLinkWrapper::getInstance()->networkLinkOrRecoverySuccess();
+            /// because app is working no notify network link
+            DuerLinkWrapper::getInstance()->setFirstNetworkReady(false);
+            /// because app is working no notify network link, but after config network must notify
+            DuerLinkWrapper::getInstance()->setFromConfigNetwork(false);
+        }
+        break;
 
-        default:
-            break;
+    default:
+        break;
     }
 }
 
@@ -345,6 +358,7 @@ bool ApplicationManager::systemInformationGetStatus(duerOSDcsSDK::sdkInterfaces:
     systemInformation.sn = DeviceIoWrapper::getInstance()->getDeviceId();
     systemInformation.softwareVersion = DeviceIoWrapper::getInstance()->getVersion();
     systemInformation.onlineStatus = DuerLinkWrapper::getInstance()->isNetworkOnline();
+    systemInformation.deviceVersion = DeviceIoWrapper::getInstance()->getDeviceVersion();
 
     return true;
 }
@@ -355,9 +369,8 @@ bool ApplicationManager::systemInformationHardReset() {
 #ifdef Box86
     DuerLinkWrapper::getInstance()->waitLogin();
     DuerLinkWrapper::getInstance()->setFromConfigNetwork(true);
-#else
-    DuerLinkWrapper::getInstance()->startNetworkConfig();
 #endif
+
     return true;
 }
 
@@ -390,19 +403,14 @@ bool ApplicationManager::sendInfraredRayCodeRequest(int carrierFrequency, const 
     carrierFrequencyStr += ",";
     carrierFrequencyStr += pattern;
     APP_INFO("ApplicationManager send Infrared Ray Code Request: %s", carrierFrequencyStr.c_str());
-    int ret = DeviceIoWrapper::getInstance()->transmitInfrared(carrierFrequencyStr);
-    if (ret == 0) {
-        return true;
-    } else {
-        return false;
-    }
+    return 0 == DeviceIoWrapper::getInstance()->transmitInfrared(carrierFrequencyStr);
 }
 
 void ApplicationManager::setDcsSdk(std::shared_ptr<duerOSDcsSDK::sdkInterfaces::DcsSdk> dcsSdk) {
     m_dcsSdk = dcsSdk;
 }
-    //set mic, wait for edit, mika
-void ApplicationManager::setMicrophoneWrapper(std::shared_ptr<PortAudioMicrophoneWrapper> micWrapper) {
+
+void ApplicationManager::setMicrophoneWrapper(std::shared_ptr<AudioMicrophoneInterface> micWrapper) {
     m_micWrapper = micWrapper;
 }
 
@@ -473,35 +481,42 @@ void ApplicationManager::onStateChanged() {
         APP_INFO("ApplicationManager onStateChanged: Connecting...");
     } else if (m_connectionStatus == duerOSDcsSDK::sdkInterfaces::ConnectionStatusObserverInterface::Status::CONNECTED) {
         switch (m_dialogState) {
-            case DialogUXState::IDLE:
-                APP_INFO("ApplicationManager onStateChanged: DuerOS is currently idle!");
-                return;
-            case DialogUXState::LISTENING:
-                m_isFromSpeaking = false;
-                m_isFirstReceiveMsg = false;
-                APP_INFO("ApplicationManager onStateChanged: Listening...");
-                return;
-            case DialogUXState::THINKING:
-                DeviceIoWrapper::getInstance()->ledAsr();
-                APP_INFO("ApplicationManager onStateChanged: Thinking...");
-                return;;
-            case DialogUXState::SPEAKING:
-                m_isFromSpeaking = true;
-                DeviceIoWrapper::getInstance()->ledTts();
-                APP_INFO("ApplicationManager onStateChanged: Speaking...");
-                return;
-            case DialogUXState::FINISHED:
-                APP_INFO("ApplicationManager onStateChanged: SpeakFinished...");
-                return;
-            case DialogUXState::MEDIA_PLAYING:
-                APP_INFO("ApplicationManager onStateChanged: Media Playing...");
-                return;
-            case DialogUXState::MEDIA_STOPPED:
-                APP_INFO("ApplicationManager onStateChanged: Media Play Stopped...");
-                return;
-            case DialogUXState::MEDIA_FINISHED:
-                APP_INFO("ApplicationManager onStateChanged: Media Play Finished...");
-                return;
+        case DialogUXState::IDLE:
+            APP_INFO("ApplicationManager onStateChanged: DuerOS is currently idle!");
+            return;
+
+        case DialogUXState::LISTENING:
+            m_isFromSpeaking = false;
+            m_isFirstReceiveMsg = false;
+            APP_INFO("ApplicationManager onStateChanged: Listening...");
+            return;
+
+        case DialogUXState::THINKING:
+            DeviceIoWrapper::getInstance()->ledAsr();
+            APP_INFO("ApplicationManager onStateChanged: Thinking...");
+            return;;
+
+        case DialogUXState::SPEAKING:
+            m_isFromSpeaking = true;
+            DeviceIoWrapper::getInstance()->ledTts();
+            APP_INFO("ApplicationManager onStateChanged: Speaking...");
+            return;
+
+        case DialogUXState::FINISHED:
+            APP_INFO("ApplicationManager onStateChanged: SpeakFinished...");
+            return;
+
+        case DialogUXState::MEDIA_PLAYING:
+            APP_INFO("ApplicationManager onStateChanged: Media Playing...");
+            return;
+
+        case DialogUXState::MEDIA_STOPPED:
+            APP_INFO("ApplicationManager onStateChanged: Media Play Stopped...");
+            return;
+
+        case DialogUXState::MEDIA_FINISHED:
+            APP_INFO("ApplicationManager onStateChanged: Media Play Finished...");
+            return;
         }
     }
 }

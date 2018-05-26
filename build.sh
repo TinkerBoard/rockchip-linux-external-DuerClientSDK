@@ -61,6 +61,9 @@ generate_output() {
     cp -r ${WORK_PATH}/sdk/log.config  ${OUTPUT_PATH}
     cp -r ${WORK_PATH}/sdk/lib/*  ${OUTPUT_PATH}/lib
     cp -r ${WORK_PATH}/third/lib/* ${OUTPUT_PATH}/lib
+    ${STRIP} -s ${OUTPUT_PATH}/lib/*
+    ${STRIP} -s ${OUTPUT_PATH}/duer_linux
+
     if [ "${Platform}" = "Sengled" ]; then
          cp -r ${WORK_PATH}/DCSApp/src/Vendor/Sengled/lib/libsai_preprocess.so  ${OUTPUT_PATH}/lib
          cp -r ${WORK_PATH}/DCSApp/src/Vendor/Sengled/sai_config ${OUTPUT_PATH}

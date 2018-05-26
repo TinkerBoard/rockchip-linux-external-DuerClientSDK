@@ -82,10 +82,11 @@ public:
      */
     virtual void onKeyWordDetected(
         std::string keyword,
-        uint64_t beginIndex = UNSPECIFIED_INDEX,
-        uint64_t = UNSPECIFIED_INDEX,
-        std::string requestId = "",
-        int wake_dir = -1) = 0;
+        uint64_t beginIndex,
+        uint64_t endIndex,
+        int wake_dir) {} ;
+
+    virtual void printInfo() {};
 };
 
 }  // namespace sdkInterfaces

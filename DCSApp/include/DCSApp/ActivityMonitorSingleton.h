@@ -13,52 +13,56 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 #ifndef DUEROS_DCS_APP_SAMPLEAPP_ACTIVITYMONITORSINGLETON_H_
 #define DUEROS_DCS_APP_SAMPLEAPP_ACTIVITYMONITORSINGLETON_H_
-
 #include <pthread.h>
 #include <sys/time.h>
-
+#include <string>
+#include <fstream>
+#include <sstream>
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
 namespace duerOSDcsApp {
 namespace application {
-
+enum PlayerStatus {
+    PLAYER_STATUS_ON,
+    PLAYER_STATUS_OFF
+};
+struct MonitorItem {
+    PlayerStatus m_playerStatus;
+    unsigned int m_timestamp;
+    MonitorItem(PlayerStatus status = PLAYER_STATUS_OFF, unsigned int timestamp = 0) : m_playerStatus(status),
+                                                                                       m_timestamp(timestamp) {
+    }
+};
 class ActivityMonitorSingleton {
 public:
     static ActivityMonitorSingleton* getInstance();
-
     static void releaseInstance();
-
-    void updateActiveTimestamp();
-
-    long int getLastestActiveTimestamp() const;
-
+    void updatePlayerStatus(PlayerStatus playerStatus);
 private:
     ActivityMonitorSingleton(const ActivityMonitorSingleton& ths);
-
     ActivityMonitorSingleton& operator=(const ActivityMonitorSingleton& ths);
-
     ActivityMonitorSingleton();
-
     ~ActivityMonitorSingleton();
-
+    void updateJsonFile();
+    void addPairToDoc(rapidjson::Document& document,
+                      const std::string& key,
+                      const std::string& value);
     static void init();
-
     static void destory();
-
+    static void* threadRoutine(void *arg);
 private:
     static ActivityMonitorSingleton* s_instance;
-
     static pthread_once_t s_init_once;
-
     static pthread_once_t s_destroy_once;
-
+    pthread_t m_threadId;
     pthread_mutex_t m_mutex;
-
-    long int m_timestamp;  //the unit is second
+    MonitorItem m_monitorItem;
+    std::string m_prevWriteContent;
+    bool m_threadAlive;
 };
-
 }  // namespace application
 }  // namespace duerOSDcsApp
-
 #endif  // DUEROS_DCS_APP_SAMPLEAPP_ACTIVITYMONITORSINGLETON_H_

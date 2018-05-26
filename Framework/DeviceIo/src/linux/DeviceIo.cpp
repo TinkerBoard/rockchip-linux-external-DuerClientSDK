@@ -551,6 +551,14 @@ bool DeviceIo::getSn(char *sn)
 bool DeviceIo::setSn(char * sn) {
     return false;
 }
+bool DeviceIo::getPCB(char *sn){
+    return false;
+}
+
+bool DeviceIo::setPCB(char *sn){
+    return false;
+}
+
 
 std::string DeviceIo::getVersion() {
     return "";

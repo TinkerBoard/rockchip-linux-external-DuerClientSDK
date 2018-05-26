@@ -31,6 +31,10 @@ using duerOSDcsApp::framework::LedState;
 using duerOSDcsApp::framework::BtControl;
 
 #define BT_TRANS_CHUNK_SIZE 320
+
+static const int MAX_USER_VOLUME = 100;
+static const int MIN_USER_VOLUME = 0;
+
 static const int MUSIC_PLAYBACK_TRACK_ID =  0x0001 << 0; //track:0 1<<0
 static const int INFO_PLAYBACK_TRACK_ID =  0x0001 << 1;
 static const int TTS_PLAYBACK_TRACK_ID =  0x0001 << 2;
@@ -45,6 +49,7 @@ pthread_once_t  DeviceIoWrapper::s_destroyOnce = PTHREAD_ONCE_INIT;
 DeviceIoWrapper::DeviceIoWrapper() : m_btPhoneConnectFlag{false},
                                      m_isTouchStartNetworkConfig{false},
                                      m_isBtPlaying{false},
+                                     m_isDlnaPlaying{false},
                                      m_direction{-1},
                                      m_btTransBuffer{NULL},
                                      m_btBufferPos(0),
@@ -52,7 +57,7 @@ DeviceIoWrapper::DeviceIoWrapper() : m_btPhoneConnectFlag{false},
                                      m_isRecognizing{false},
                                      m_isRecoveryingNetwork{false},
                                      m_sleepMode{false},
-                                     m_isPlayAndPause{false} {
+                                     m_pauseBtnClicked{false} {
     DeviceIo::getInstance()->setNotify(this);
     m_btTransBuffer = (char *)malloc(sizeof(char) * BT_TRANS_CHUNK_SIZE);
     s_destroyOnce = PTHREAD_ONCE_INIT;
@@ -282,6 +287,33 @@ void DeviceIoWrapper::callback(DeviceInput event, void *data, int len) {
             handlePlayAndPause();
             break;
         }
+        case DeviceInput::DLNA_STOPPED: {
+            m_isDlnaPlaying = false;
+            APP_INFO("DeviceIoWrapper callback DLNA_STOPPED");
+            for(auto observer : m_observers)
+            {
+                observer->dlnaStopPlay();
+            }
+            break;
+        }
+        case DeviceInput::DLNA_PLAYING: {
+            m_isDlnaPlaying = true;
+            APP_INFO("DeviceIoWrapper callback DLNA_PLAYING");
+            for(auto observer : m_observers)
+            {
+                observer->dlnaStartPlay();
+            }
+            break;
+        }
+        case DeviceInput::DLNA_PAUSED: {
+            m_isDlnaPlaying = false;
+            for(auto observer : m_observers)
+            {
+                observer->dlnaPausePlay();
+            }
+            APP_INFO("DeviceIoWrapper callback DLNA_PAUSED");
+            break;
+        }
         default:
             break;
     }
@@ -332,6 +364,10 @@ void DeviceIoWrapper::handleBluetooth() {
 
 bool DeviceIoWrapper::isBtPlaying() {
     return m_isBtPlaying;
+}
+
+bool DeviceIoWrapper::isDlnaPlaying() {
+    return m_isDlnaPlaying;
 }
 
 void DeviceIoWrapper::handleTouchEvent(TouchEvent event) {
@@ -435,6 +471,8 @@ int DeviceIoWrapper::getCurrentVolume() const {
 }
 
 void DeviceIoWrapper::setCurrentVolume(int current_volume) {
+    current_volume = current_volume < MIN_USER_VOLUME ? MIN_USER_VOLUME : current_volume;
+    current_volume = current_volume > MAX_USER_VOLUME ? MAX_USER_VOLUME : current_volume;
     DeviceIo::getInstance()->setVolume(current_volume,
 						(MUSIC_PLAYBACK_TRACK_ID |
 						INFO_PLAYBACK_TRACK_ID |
@@ -558,6 +596,20 @@ std::string DeviceIoWrapper::getDeviceId() {
     return std::string(sn);
 #else
     return Configuration::getInstance()->getDeviceId();
+#endif
+}
+
+std::string DeviceIoWrapper::getDeviceVersion() {
+#ifdef MTK8516
+    char deviceVersion[64] = { 0 };
+    if (DeviceIo::getInstance()->getPCB(deviceVersion)) {
+        APP_DEBUG("Device Version = [%s]", deviceVersion);
+        return std::string(deviceVersion);
+    } else {
+        return "";
+    }
+#else
+    return "";
 #endif
 }
 
@@ -720,6 +772,12 @@ std::string DeviceIoWrapper::getWifiBssid() {
     return std::string(wifi_bssid);
 }
 
+std::string DeviceIoWrapper::getlocalName() {
+    char local_name[128] = {0};
+    DeviceIo::getInstance()->controlBt(BtControl::GET_LOCAL_NAME, local_name);
+    return std::string(local_name);
+}
+
 bool DeviceIoWrapper::isRecognizing() const {
     return m_isRecognizing;
 }
@@ -754,6 +812,8 @@ void DeviceIoWrapper::enterSleepMode(bool isLedLightOn) {
     setSleepMode(true);
     if (m_applicationManager) {
         m_applicationManager->microphoneOff();
+    }
+    if (!m_pauseBtnClicked) {
         m_applicationManager->forceHoldFocus(true);
     }
     setMute(true);
@@ -761,7 +821,6 @@ void DeviceIoWrapper::enterSleepMode(bool isLedLightOn) {
         ledMute();
     }
     muteChanged();
-    system("echo mem > /sys/power/state");
 }
 
 void DeviceIoWrapper::exitSleepMode() {
@@ -771,6 +830,8 @@ void DeviceIoWrapper::exitSleepMode() {
     setSleepMode(false);
     if (m_applicationManager) {
         m_applicationManager->microphoneOn();
+    }
+    if (!m_pauseBtnClicked) {
         m_applicationManager->forceHoldFocus(false);
     }
     setMute(false);
@@ -809,22 +870,22 @@ int DeviceIoWrapper::transmitInfrared(std::string &infraredCode) {
     return DeviceIo::getInstance()->transmitInfrared(infraredCode);
 }
 
-bool DeviceIoWrapper::isPlayAndPause() const {
-    return m_isPlayAndPause;
+bool DeviceIoWrapper::isPauseBtnClicked() const {
+    return m_pauseBtnClicked;
 }
 
-void DeviceIoWrapper::setPlayAndPause(bool isPlayAndPause) {
-    m_isPlayAndPause = isPlayAndPause;
+void DeviceIoWrapper::setPauseBtnFlag(bool flag) {
+    m_pauseBtnClicked = flag;
 }
 
 void DeviceIoWrapper::handlePlayAndPause() {
-    if (!isPlayAndPause()) {
-        setPlayAndPause(true);
+    if (!isPauseBtnClicked()) {
+        setPauseBtnFlag(true);
         if (m_applicationManager) {
             m_applicationManager->forceHoldFocus(true);
         }
     } else {
-        setPlayAndPause(false);
+        setPauseBtnFlag(false);
         if (m_applicationManager) {
             m_applicationManager->forceHoldFocus(false);
         }

@@ -91,7 +91,7 @@ public:
      *     @return DcsSdk实例指针或nullptr。
      * \endif
      */
-    static std::unique_ptr<DcsSdk> create(DcsSdkParameters& parameters);
+    static std::unique_ptr<DcsSdk> create(DcsSdkParameters parameters);
 
     /**
      * \if english
@@ -206,11 +206,10 @@ public:
      *     @param[in] keyword 检测到的唤醒词.
      * \endif
      */
-    bool notifyOfWakeWord(
+    std::future<bool> notifyOfWakeWord(
             uint64_t beginIndex,
             uint64_t endIndex,
-            std::string keyword,
-            std::string requestId);
+            const std::string& keyword);
 
     static const auto INVALID_INDEX = std::numeric_limits<uint64_t>::max();
     /**
@@ -225,8 +224,6 @@ public:
      * \endif
      */
     void notifyOfTapToTalk(uint64_t beginIndex = INVALID_INDEX);
-
-    void startBDSSDKListen();
 
     /**
      * \if english
@@ -347,7 +344,7 @@ public:
      * \endif
      */
     void notifyResetHttp2Connection();
-#ifndef  BUILD_BDS_SDK
+
 #ifdef KITTAI_KEY_WORD_DETECTOR
     /**
      * \if english
@@ -366,7 +363,6 @@ public:
      * \endif
      */
     void exitPlayMusicScene();
-#endif
 #endif
 
     /**
@@ -438,7 +434,7 @@ private:
      *     @return True/False：初始化成功/失败。
      * \endif
      */
-    bool initialize(DcsSdkParameters& parameters);
+    bool initialize(DcsSdkParameters parameters);
 
     /**
      * \if english

@@ -85,7 +85,8 @@ enum class BtControl {
     GET_WIFI_MAC,
     GET_WIFI_IP,
     GET_WIFI_SSID,
-    GET_WIFI_BSSID
+    GET_WIFI_BSSID,
+    GET_LOCAL_NAME
 };
 
 /* input event */
@@ -134,9 +135,13 @@ enum class DeviceInput {
     BT_HFP_AUDIO_DISCONNECT,
     BT_POWER_OFF,
 
-    KEY_CLOSE_TIMER_ALARM = 30,
+    DLNA_STOPPED = 30,
+    DLNA_PLAYING,
+    DLNA_PAUSED,
+
+    KEY_CLOSE_TIMER_ALARM,
     KEY_IS_SLEEP_STATE,
-    KEY_PLAY_PAUSE,
+    KEY_PLAY_PAUSE = 35,
 
     KEY_SHUT_DOWN,
     KEY_SLEEP_MODE
@@ -254,7 +259,8 @@ public:
     bool getSn(char* sn);
 
     bool setSn(char* sn);
-
+    bool getPCB(char* sn);
+    bool setPCB(char *sn);
     /**
      * @brief get version
      *

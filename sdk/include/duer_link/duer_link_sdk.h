@@ -214,7 +214,11 @@ public:
     * get operation type.
     **/
     void get_operation_type();
-
+    
+    /**
+    * set wirtable file path.
+    **/
+    void set_writable_file_path(std::string& file_path);
 private:
     duerLinkSdk();
     virtual ~duerLinkSdk();

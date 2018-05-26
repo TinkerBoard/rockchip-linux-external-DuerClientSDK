@@ -33,7 +33,7 @@
 #include <DcsSdk/ApplicationImplementation.h>
 #include <DcsSdk/ConnectionStatusObserverInterface.h>
 #include <DcsSdk/DialogUXStateObserverInterface.h>
-//#ifdef KITTAI_KEY_WORD_DETECTOR
+//#if (defined KITTAI_KEY_WORD_DETECTOR) || (defined BDSAI_KEY_WORD_DETECTOR)
 #include <DcsSdk/KeyWordObserverInterface.h>
 //#endif
 #include <DcsSdk/LocalMediaPlayerInterface.h>
@@ -70,7 +70,9 @@ public:
             m_connectionObservers(nullptr),
             m_applicationImplementation(nullptr),
             m_localTtsMediaPlayer(nullptr),
-            m_localPromptPlayer(nullptr) {
+            m_localPromptPlayer(nullptr),
+            m_sdsUnitSize(2),
+            m_debugFlag(true) {
     }
 
     /**
@@ -118,7 +120,7 @@ public:
      *     @param[in] value Tts player handler.
      * \else
      *     @brief 设置TTS player的实例指针。
-     *     @param[in] value Tts player实例指针。kwd_get_heuristic_snr
+     *     @param[in] value Tts player实例指针。
      * \endif
      */
     void setSpeakMediaPlayer(std::shared_ptr<MediaPlayerInterface> value) {
@@ -244,7 +246,7 @@ public:
         m_customizeDirective = customizeDirective;
     }
 
-//#ifdef KITTAI_KEY_WORD_DETECTOR
+//#if (defined KITTAI_KEY_WORD_DETECTOR) || (defined BDSAI_KEY_WORD_DETECTOR)
     /**
      * \if english
      *     @brief Set value form member m_keyWordObserverInterface.
@@ -454,7 +456,8 @@ public:
         return m_customizeDirective;
     };
 
-    /**
+//#if (defined KITTAI_KEY_WORD_DETECTOR) || (defined BDSAI_KEY_WORD_DETECTOR)
+        /**
      * \if english
      *     @brief Get value of member m_keyWordObserverInterface.
      *     @return Value of member m_keyWordObserverInterface.
@@ -466,7 +469,52 @@ public:
     std::shared_ptr<sdkInterfaces::KeyWordObserverInterface> getKeyWordObserverInterface() {
         return m_keyWordObserverInterface;
     }
+//#endif
+    /**
+    * \if english
+    *     @brief set SDS storage unit size, byte.
+    * \else
+    *     @brief 设置SDS存储单元，默认2，单位字节。
+    * \endif
+    */
+    void setSDSUnitSize(const size_t& size) {
+        m_sdsUnitSize = size;
+    }
+    /**
+    * \if english
+    *     @brief Get SDS storage unit size, byte.
+    *     @return Value of SDS storage unit size, byte.
+    * \else
+    *     @brief 獲取SDS存储单元，默认2，单位字节。
+    *     @return SDS存储单元，单位字节。
+    * \endif
+    */
+    size_t getSDSUnitSize() {
+        return m_sdsUnitSize;
+    }
 
+    /**
+    * \if english
+    *     @brief set debug flag.
+    * \else
+    *     @brief 設置debug標識。
+    * \endif
+    */
+    void setDebugFlag(const bool& flag) {
+        m_debugFlag = flag;
+    }
+    /**
+    * \if english
+    *     @brief Get debug flag.
+    *     @return debug flag.
+    * \else
+    *     @brief 獲取debug flag。
+    *     @return debug flag。
+    * \endif
+    */
+    bool getDebugFlag() {
+        return m_debugFlag;
+    }
 private:
     /**
      * \if english
@@ -588,7 +636,7 @@ private:
      */
     std::vector<std::pair<std::string, std::string>> m_customizeDirective;
 
-//#ifdef KITTAI_KEY_WORD_DETECTOR
+//#if (defined KITTAI_KEY_WORD_DETECTOR) || (defined BDSAI_KEY_WORD_DETECTOR)
     /**
      * \if english
      *     @brief KeyWordObserverInterface handler.
@@ -607,6 +655,24 @@ private:
      * \endif
      */
     std::string m_clientSecret;
+
+    /**
+     * \if english
+     *     @brief SDS unit size, byte.
+     * \else
+     *     @brief SDS 音頻數據存儲單元，單位：字節
+     * \endif
+     */
+    size_t m_sdsUnitSize;
+
+    /**
+     * \if english
+     *     @brief debug mode flag， controler of log.
+     * \else
+     *     @brief 調試模式標記（控制打開或全幣log）
+     * \endif
+     */
+    bool m_debugFlag;
 };
 
 }  // namespace sdkInterfaces

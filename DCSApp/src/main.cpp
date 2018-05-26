@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
+#if 1
 #include <signal.h>
 #include <cstdlib>
 #include <string>
@@ -21,6 +21,7 @@
 #include "LoggerUtils/DcsSdkLogger.h"
 #include "DCSApp/DCSApplication.h"
 #include "DCSApp/DeviceIoWrapper.h"
+#include "DCSApp/Configuration.h"
 #include <DeviceTools/SingleApplication.h>
 #include <DeviceTools/PrintTickCount.h>
 
@@ -36,44 +37,34 @@
 #define __DUER_LINK_VERSION__ "Unknown DuerLink Version"
 #endif
 
-static void (*segmentation_default_handler)(int);
-static void segmentation_signal_handler(int arg)
-{
-    int nptrs = 0;
-#define BACK_TRACE_SIZE 100
-    void *buffer[BACK_TRACE_SIZE];
-    int core_dump_fd = 0;
-
-    signal(SIGSEGV, segmentation_default_handler);
-
-    core_dump_fd = open("/data/core_dump_stack", O_CREAT | O_APPEND | O_RDWR);
-    if (core_dump_fd > 0) {
-        nptrs = backtrace(buffer, BACK_TRACE_SIZE);
-        backtrace_symbols_fd(buffer, nptrs, core_dump_fd);
-        write(core_dump_fd, "\n", sizeof("\n"));
-        fsync(core_dump_fd);
-        close(core_dump_fd);
-    }
-
-    kill(getpid(), SIGSEGV);
-}
-
 int main(int argc, char** argv) {
     deviceCommonLib::deviceTools::printTickCount("duer_linux main begin");
+
+    LOGGER_ENABLE(false);
+    if (!duerOSDcsApp::application::Configuration::getInstance()->readConfig()) {
+        deviceCommonLib::deviceTools::printTickCount("Failed to init Configuration!");
+        return 1;
+    }
+
+    if (duerOSDcsApp::application::Configuration::getInstance()->getDebug()) {
+        deviceCommonLib::deviceTools::printTickCount("open logs!!");
+        LOGGER_ENABLE(true);
+    }
+
 #ifdef Build_CrabSdk
     /**
-     * Ê×ÏÈÓÃCrabÆ½Ì¨·ÖÅäµÄApp KeyºÍËÞÖ÷³ÌÐòµÄ°æ±¾½øÐÐ³õÊ¼»¯
-     * ×îºÃÔÚmainº¯ÊýÖÐ½øÐÐµ÷ÓÃ
+     * é¦–å…ˆç”¨Crabå¹³å°åˆ†é…çš„App Keyå’Œå®¿ä¸»ç¨‹åºçš„ç‰ˆæœ¬è¿›è¡Œåˆå§‹åŒ–
+     * æœ€å¥½åœ¨mainå‡½æ•°ä¸­è¿›è¡Œè°ƒç”¨
      */
     std::string m_softwareVersion = duerOSDcsApp::application::DeviceIoWrapper::getInstance()->getVersion();
     std::string m_deviceId = duerOSDcsApp::application::DeviceIoWrapper::getInstance()->getDeviceId();
     baidu_crab_sdk::CrabSDK::init("78ceb6f2024be4e7", m_softwareVersion, "/tmp/coredump");
     /**
-     * ÉèÖÃÉè±¸DEVICEID
+     * è®¾ç½®è®¾å¤‡DEVICEID
      */
     baidu_crab_sdk::CrabSDK::set_did(m_deviceId);
 #endif
-    segmentation_default_handler = signal(SIGSEGV, segmentation_signal_handler);
+
 #ifdef MTK8516
     if (geteuid() != 0) {
         APP_ERROR("This program must run as root, such as \"sudo ./duer_linux\"");
@@ -89,6 +80,7 @@ int main(int argc, char** argv) {
     APP_INFO("SampleApp Version: [%s]", __SAMPLEAPP_VERSION__);
     APP_INFO("DcsSdk Version: [%s]", __DCSSDK_VERSION__);
     APP_INFO("DuerLink Version: [%s]", __DUER_LINK_VERSION__);
+    printf("%s------>Line %d -----\n", __FUNCTION__, __LINE__);
 
     auto dcsApplication = duerOSDcsApp::application::DCSApplication::create();
 
@@ -104,3 +96,294 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
+#else
+#include <iostream>
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+#include <sys/time.h>
+#include <time.h>
+#include <vector>
+#include <signal.h>
+
+// Generic SDK interface
+#include "BDSpeechSDK.hpp"
+#include "BDSSDKMessage.hpp"
+
+// Definitions for ASR engine
+#include "bds_asr_key_definitions.hpp"
+#include "bds_ASRDefines.hpp"
+
+// Definitions for wakeup engine
+#include "bds_wakeup_key_definitions.hpp"
+#include "bds_WakeupDefines.hpp"
+
+using namespace std;
+using namespace bds;
+BDSpeechSDK* g_Asr;
+void asr_online_start(BDSpeechSDK* SDK);
+void wakeup_listener(bds::BDSSDKMessage& message, void* myParam) {
+    cout << "wakeup event from " << *((std::string*)myParam) << ": " << message.name << endl;
+    std::vector<std::string> keys = message.string_param_keys();
+
+    int status = -1;
+    message.get_parameter(CALLBACK_WAK_STATUS, status);
+    if (status == bds::EWakeupEngineWorkStatusTriggered) {
+        printf("==========****wake up****===========\n");
+        asr_online_start(g_Asr);
+
+    }
+    for (std::vector<std::string>::iterator it = keys.begin();
+         it < keys.end();
+         ++it) {
+        std::string value;
+        message.get_parameter(*it, value);
+        cout << "STRKEY: " << *it << " = " << value << endl;
+    }
+
+    keys = message.int_param_keys();
+
+    for (std::vector<std::string>::iterator it = keys.begin();
+         it < keys.end();
+         ++it) {
+        int value;
+        message.get_parameter(*it, value);
+        cout << "INTKEY " << *it << " = " << value << endl;
+    }
+
+    keys = message.char_param_keys();
+
+    for (std::vector<std::string>::iterator it = keys.begin();
+         it < keys.end();
+         ++it) {
+        cout << "DATA KEY: " << *it << endl;
+    }
+}
+
+const std::string WAKEUP_USER_PARAM("wakeup engine");
+BDSpeechSDK* wakeup_init() {
+    string errorMsg;
+    BDSpeechSDK* SDK = bds::BDSpeechSDK::get_instance(bds::SDK_TYPE_WAKEUP, errorMsg);
+
+    if (SDK == NULL) {
+        cout << "failed get wakeup SDK " << errorMsg << endl;
+    }
+
+    SDK->set_event_listener(&wakeup_listener, (void*)&WAKEUP_USER_PARAM);
+    return SDK;
+}
+
+void wakeup_config(BDSpeechSDK* SDK) {
+    string errorMsg;
+    bds::BDSSDKMessage msg;
+    msg.name = bds::WAK_CMD_CONFIG;
+    msg.set_parameter(bds::COMMON_PARAM_KEY_DEBUG_LOG_LEVEL, 0);
+    //msg.set_parameter(bds::WP_PARAM_KEY_ENABLE_DNN_WAKEUP, false);
+   // msg.set_parameter(bds::WP_PARAM_KEY_WAKEUP_SUPPORT_ESIS, 1);
+    msg.set_parameter(bds::OFFLINE_PARAM_KEY_LICENSE_FILE_PATH, std::string("./resource/bds_license.dat"));
+    msg.set_parameter(bds::WP_PARAM_KEY_WAKEUP_WORDS, std::string("{\"words\":[\"å°åº¦å°åº¦\"]}"));
+    msg.set_parameter(bds::WP_PARAM_KEY_WAKEUP_DAT_FILE_PATH, std::string("./resources/esis_carlife.pkg"));
+    msg.set_parameter(bds::OFFLINE_PARAM_KEY_APP_CODE, "9959452");
+    msg.set_parameter(bds::WP_PARAM_KEY_WAKEUP_ENABLE_ONESHOT, 0);
+
+    if (!SDK->post(msg, errorMsg)) {
+        cout << "failed send config message " << errorMsg << endl;
+        bds::BDSpeechSDK::release_instance(SDK);
+        return;
+    }
+}
+
+void wakeup_load_engine(BDSpeechSDK* SDK) {
+    string errorMsg;
+    bds::BDSSDKMessage loadEngine;
+    loadEngine.name = bds::WAK_CMD_LOAD_ENGINE;
+    if(!SDK->post(loadEngine,errorMsg)){
+        cout << "failed send load message " << errorMsg << endl;
+        bds::BDSpeechSDK::release_instance(SDK);
+        return;
+    }
+}
+
+void wakeup_unload_engine(BDSpeechSDK* SDK) {
+    string errorMsg;
+    bds::BDSSDKMessage loadEngine;
+    loadEngine.name = bds::WAK_CMD_UNLOAD_ENGINE;
+    if(!SDK->post(loadEngine,errorMsg)){
+        cout << "failed send unload message " << errorMsg << endl;
+        bds::BDSpeechSDK::release_instance(SDK);
+        return;
+    }
+}
+
+void wakeup_start(BDSpeechSDK* SDK) {
+    string errorMsg;
+    bds::BDSSDKMessage msg;
+    msg.name = bds::WAK_CMD_START;
+    msg.set_parameter(bds::MIC_PARAM_KEY_CHANNEL_TYPE, 2);
+    if (!SDK->post(msg, errorMsg)) {
+        cout << "failed send config message " << errorMsg << endl;
+        bds::BDSpeechSDK::release_instance(SDK);
+        return;
+    }
+}
+
+void wakeup_stop(BDSpeechSDK* SDK) {
+    string error;
+    BDSSDKMessage msg;
+    msg.name = WAK_CMD_STOP;
+    SDK->post(msg, error);
+}
+
+void wakeup_release(BDSpeechSDK* SDK) {
+    BDSpeechSDK::release_instance(SDK);
+}
+
+void wakeup_offline_setpath(BDSpeechSDK* SDK) {
+    string errorMsg;
+    bds::BDSSDKMessage msg;
+    msg.name = bds::BDS_COMMAND_SET_WRITABLE_USER_DATA_PATH;
+    msg.set_parameter(bds::BDS_PARAM_KEY_WRITABLE_USER_DATA_PATH, "./");
+    if (!SDK->post(msg, errorMsg)) {
+        cout << "failed send config message " << errorMsg << endl;
+        return;
+    }
+}
+
+void asr_listener(bds::BDSSDKMessage& message, void* myParam) {
+    cout << "asr event from " << *((std::string*)myParam) << ": " << message.name << endl;
+    std::vector<std::string> keys = message.string_param_keys();
+
+    for (std::vector<std::string>::iterator it = keys.begin();
+         it < keys.end();
+         ++it) {
+        std::string value;
+        message.get_parameter(*it, value);
+        cout << "STRKEY: " << *it << " = " << value << endl;
+    }
+
+    keys = message.int_param_keys();
+
+    for (std::vector<std::string>::iterator it = keys.begin();
+         it < keys.end();
+         ++it) {
+        int value;
+        message.get_parameter(*it, value);
+        cout << "INTKEY " << *it << " = " << value << endl;
+    }
+
+    keys = message.char_param_keys();
+
+    for (std::vector<std::string>::iterator it = keys.begin();
+         it < keys.end();
+         ++it) {
+        cout << "DATA KEY: " << *it << endl;
+    }
+}
+
+const std::string ASR_USER_PARAM("ASR engine");
+BDSpeechSDK* asr_online_init() {
+    string errorMsg;
+    BDSpeechSDK* SDK = bds::BDSpeechSDK::get_instance(bds::SDK_TYPE_ASR, errorMsg);
+
+    if (SDK == NULL) {
+        cout << "failed get ASR SDK " << errorMsg << endl;
+    }
+
+    SDK->set_event_listener(&asr_listener, (void*)&ASR_USER_PARAM);
+    return SDK;
+}
+
+void asr_online_config(BDSpeechSDK* SDK) {
+    string errorMsg;
+    bds::BDSSDKMessage msg;
+    msg.name = bds::ASR_CMD_CONFIG;
+    msg.set_parameter(bds::COMMON_PARAM_KEY_DEBUG_LOG_LEVEL, 0);
+    //msg.set_parameter(bds::ASR_PARAM_KEY_CHUNK_PARAM, std::string("{   \"CUID\" : \"audiounicast_debug_monitor\",   \"app_ver\" : \"1.0.0\",   \"appid\" : \"dmE8101CFDEA394AA5\",   \"appkey\" : \"E87F998435904CB1B050CE169CC9073C\",   \"client_msg_id\" : \"1234556\",   \"debug\" : 0,   \"from_client\" : \"sdk\",   \"latitude\" : 0.0,   \"location_system\" : \"wgs84\",   \"longitude\" : 0.0,   \"operation_system\" : \"android\",   \"operation_system_version\" : \"\",   \"request_from\" : \"0\",   \"request_query\" : \"æ’­æ”¾ä¸€é¦–æ­Œï¼Œ\",   \"request_type\" : \"0\",   \"request_uid\" : \"audiounicast_debug_monitor\",   \"sample_name\" : \"bear_brain_wireless\",   \"sdk_ui\" : \"no\",   \"service_id\" : \"1234556\",   \"speech_id\" : \"6393155938941717864\"}"));
+    msg.set_parameter(bds::ASR_PARAM_KEY_SERVER_URL, std::string("http://vse.baidu.com/v2"));
+    msg.set_parameter(bds::ASR_PARAM_KEY_CHUNK_ENABLE, 1);
+    msg.set_parameter(bds::ASR_PARAM_KEY_CHUNK_KEY, std::string("com.baidu.dumi.dcs31.rk3308"));
+    msg.set_parameter(bds::ASR_PARAM_KEY_PRODUCT_ID, std::string("1400"));
+    msg.set_parameter(bds::ASR_PARAM_KEY_ENABLE_LOCAL_VAD, 0);
+//    msg.set_parameter(bds::ASR_PARAM_KEY_MFE_DNN_DAT_FILE, "../../resources/asr_resource/bds_easr_mfe_dnn.dat");
+    msg.set_parameter(bds::ASR_PARAM_KEY_SAVE_VAD_AUDIO_ENABLE, true);
+
+    if (!SDK->post(msg, errorMsg)) {
+        cout << "failed send config message " << errorMsg << endl;
+        bds::BDSpeechSDK::release_instance(SDK);
+        return;
+    }
+}
+
+void asr_online_start(BDSpeechSDK* SDK) {
+    string errorMsg;
+    bds::BDSSDKMessage msg;
+    msg.name = bds::ASR_CMD_START;
+    msg.set_parameter(bds::ASR_PARAM_KEY_PLATFORM, std::string("linux"));
+    msg.set_parameter(bds::ASR_PARAM_KEY_APP, std::string("EchoTest"));
+    msg.set_parameter(bds::ASR_PARAM_KEY_SDK_VERSION, std::string("LINUX TEST"));
+
+    //msg.set_parameter(bds::ASR_PARAM_KEY_API_KEY,std::string("dVl7kAI2AMCIIkEGRR7lmCAw"));
+    //msg.set_parameter(bds::ASR_PARAM_KEY_SECRET_KEY,std::string("f4a670f08725dbcdf376a447844aa2e6"));
+    if (!SDK->post(msg, errorMsg)) {
+        cout << "failed send config message " << errorMsg << endl;
+        bds::BDSpeechSDK::release_instance(SDK);
+        return;
+    }
+}
+
+void asr_online_cancel(BDSpeechSDK* SDK) {
+    cout << "---------------------------cancel start--------------------------" << endl;
+    string error;
+    BDSSDKMessage cancel;
+    cancel.name = ASR_CMD_CANCEL;
+    SDK->post(cancel, error);
+    cout << "---------------------------cancel  end--------------------------" << endl;
+}
+
+void asr_online_release(BDSpeechSDK* SDK) {
+    BDSpeechSDK::release_instance(SDK);
+}
+
+void start_all(BDSpeechSDK *asr, BDSpeechSDK *wakeup) {
+    wakeup_start(wakeup);
+}
+
+void cancel_all(BDSpeechSDK *asr, BDSpeechSDK *wakeup) {
+    //wakeup_stop(wakeup);
+    //asr_online_cancel(asr);
+}
+
+void test1(BDSpeechSDK *asr, BDSpeechSDK *wakeup) {
+    start_all(asr, wakeup);
+    sleep(20);
+    cancel_all(asr, wakeup);
+}
+
+bool isRunning = true;
+void signal_handler(int signal) {
+    std::cout << "---> signal = " << signal << endl;
+    isRunning = false;
+}
+
+int main(int argc, char** argv) {
+    cout << "---------------------------main start---------------------------" << endl;
+
+    BDSpeechSDK *asr = asr_online_init();
+    g_Asr = asr;
+    asr_online_config(asr);
+
+    BDSpeechSDK *wakeup = wakeup_init();
+    wakeup_config(wakeup);
+    wakeup_load_engine(wakeup);
+    test1(asr, wakeup);
+    signal(SIGINT, &signal_handler);
+    while (isRunning) {
+        sleep(1);
+    }
+    wakeup_release(wakeup);
+    asr_online_release(asr);
+    cout << "---------------------------main  end---------------------------" << endl;
+    return 0;
+}
+
+#endif

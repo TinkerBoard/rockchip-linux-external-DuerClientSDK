@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+#include <Dlna/DlnaDmrOutput.h>
 #include "DCSApp/VoiceAndTouchWakeUpObserver.h"
 #include "DCSApp/DuerLinkWrapper.h"
 #include "DCSApp/SoundController.h"
@@ -32,18 +33,17 @@ static const std::string KEYWORD_NEXT_SONG = "下一首";
 static const std::string KEYWORD_PAUSE = "暂停";
 
 VoiceAndTouchWakeUpObserver::VoiceAndTouchWakeUpObserver() {
-    APP_INFO("VoiceAndTouchWakeUpObserver constructor");
 
 }
 
 void VoiceAndTouchWakeUpObserver::onKeyWordDetected(std::string keyword,
                                                     uint64_t beginIndex,
                                                     uint64_t endIndex,
-                                                    std::string requestId,
-                                                    int wake_dir) {
+													int wake_dir) {
     APP_INFO("VoiceAndTouchWakeUpObserver onKeyWordDetected:%s", keyword.c_str());
+    printf("VoiceAndTouchWakeUpObserver onKeyWordDetected:%s\n", keyword.c_str());
     DeviceIoWrapper::getInstance()->setRecognizing(true);
-    wakeupTriggered(true, beginIndex, endIndex, keyword, requestId, wake_dir);
+    wakeupTriggered(true, beginIndex, endIndex, keyword, wake_dir);
 
 #if 0
     if (endIndex != sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX &&
@@ -78,7 +78,13 @@ void VoiceAndTouchWakeUpObserver::onKeyWordDetected(std::string keyword,
                 } else if (KEYWORD_PAUSE == keyword) {
                     if (DeviceIoWrapper::getInstance()->isBtPlaying()) {
                         DeviceIoWrapper::getInstance()->btPausePlay();
-                    } else {
+                    }
+#ifdef DUEROS_DLNA
+                    else if(DeviceIoWrapper::getInstance()->isDlnaPlaying()) {
+                        duerOSDcsApp::dueros_dlna::Output::get_instance().output_pause();
+                    }
+#endif
+                    else {
                         if (m_dcsSdk) {
                             m_dcsSdk->issuePlaybackPauseCommand();
                         }
@@ -90,19 +96,24 @@ void VoiceAndTouchWakeUpObserver::onKeyWordDetected(std::string keyword,
 #endif
 }
 
+void VoiceAndTouchWakeUpObserver::printInfo() {
+    printf("%s------>Line %d--------\n", __FUNCTION__, __LINE__);
+}
+
 void VoiceAndTouchWakeUpObserver::touchStartAsr() {
     APP_INFO("VoiceAndTouchWakeUpObserver touchStartAsr");
     wakeupTriggered(false);
+    APP_INFO("VoiceAndTouchWakeUpObserver touchStartAsr end");
 }
 
 void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
                                                   uint64_t beginIndex,
                                                   uint64_t endIndex,
                                                   std::string keyword,
-                                                  std::string requestId,
-                                                  int wake_dir) {
+												  int wake_dir) {
 #if 1
     //BDS SDK 不判断网络状态
+    printf("\n============= wakeup trigger==========\n");
     SoundController::getInstance()->wakeUp();
     DeviceIoWrapper::getInstance()->ledNetOff();
     APP_INFO("VoiceAndTouchWakeUpObserver wakeupTriggered");
@@ -112,15 +123,15 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
         DeviceIoWrapper::getInstance()->setDirection(wake_dir);
         DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
         if (m_dcsSdk) {
-            APP_INFO("VoiceAndTouchWakeUpObserver notifyOfWakeWord:%d,%d,%s,%s",beginIndex, endIndex, keyword.c_str(), requestId.c_str());
-            m_dcsSdk->notifyOfWakeWord(beginIndex, endIndex, keyword, requestId);
+            printf("\n============= m_dcsSdk notifyOfWakeWord==========\n");
+            m_dcsSdk->notifyOfWakeWord(beginIndex, endIndex, keyword);
         }
     } else {
         DeviceIoWrapper::getInstance()->setDirection(-1);
         DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
-        if (m_dcsSdk) {
+        /*if (m_dcsSdk) {
           m_dcsSdk->startBDSSDKListen();
-        }
+        }*/
     }
     return;
 #endif
@@ -135,13 +146,12 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
         if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_CONNECT_SUCCEED) {
             SoundController::getInstance()->wakeUp();
             DeviceIoWrapper::getInstance()->ledNetOff();
-
             if (is_voice_wakeup) {
                 int target_dir = DeviceIoWrapper::getInstance()->fetchWakeupDirection();
                 DeviceIoWrapper::getInstance()->setDirection(target_dir);
                 DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
                 if (m_dcsSdk) {
-                    m_dcsSdk->notifyOfWakeWord(endIndex - 8000, endIndex, keyword, requestId);
+                    m_dcsSdk->notifyOfWakeWord(endIndex - 8000, endIndex, keyword);
                 }
             } else {
                 DeviceIoWrapper::getInstance()->setDirection(-1);
@@ -155,7 +165,7 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
             if (is_voice_wakeup) {
                 APP_INFO("Network unconnected when Voice wakeupd:%s", keyword.c_str());
             }
-
+            
             if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_AUTH_FAILED) {
                 DeviceIoWrapper::getInstance()->setRecognizing(false);
                 SoundController::getInstance()->accountUnbound(nullptr);

@@ -9,10 +9,11 @@ include_directories(
     sdk/include/duer_link
     sdk/include/duer_link/network_observer
     sdk/include/duer_link/device_ctrl_observer
-    third/include)
-
+    third/include
+    Framework/include)
 link_directories(
-    sdk/lib)
+    sdk/lib
+    third/lib)
 
 add_definitions(-DLinux)
 

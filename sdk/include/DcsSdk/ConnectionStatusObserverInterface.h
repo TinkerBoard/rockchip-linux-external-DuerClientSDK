@@ -227,6 +227,15 @@ public:
      * \endif
      */
     virtual void onConnectionStatusChanged(const Status status, const ChangedReason reason) = 0;
+
+    /**
+     * \if english
+     *     @brief Called when cancel the asr request.
+     * \else
+     *     @brief 通知语音识别请求已经取消
+     * \endif
+     */
+    virtual void onSpeechAsrCanceled() {}
 };
 
 /**

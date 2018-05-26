@@ -175,6 +175,7 @@ elseif(${Platform} MATCHES "Dot")
     add_library(DeviceIo SHARED
             hodar/DeviceIo.cpp
             hodar/led_dot.cpp
+            hodar/key_dot.cpp
             hodar/volume.cpp
             hodar/touch_dot.cpp
             hodar/infrared.cpp
@@ -224,7 +225,7 @@ elseif(${Platform} MATCHES "Box86")
             hodar/DeviceIo.cpp
             hodar/led_box86.cpp
             hodar/volume.cpp
-            hodar/touch.cpp
+            hodar/touch_box86.cpp
             hodar/key_box86.cpp
             hodar/infrared.cpp
             hodar/oper_sn/oper_sn.cpp

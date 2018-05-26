@@ -1,6 +1,18 @@
-//
-// Created by nick on 17-12-6.
-//
+/*
+ * Copyright (c) 2017 Baidu, Inc. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 
 #ifndef DCS_DUERLINKMTKINSTANCE_H
 #define DCS_DUERLINKMTKINSTANCE_H
@@ -40,7 +52,7 @@
 
 #define PACKET_SIZE         4096
 #define MAX_WAIT_TIME       1;//5
-#define MAX_PACKETS_COUNT   20
+#define MAX_PACKETS_COUNT   4
 #define MAX_PING_INTERVAL   300
 #define PING_DEST_HOST1       "114.114.114.114"
 #define PING_DEST_HOST2       "8.8.8.8"
@@ -92,6 +104,17 @@ public:
     static DuerLinkMtkInstance* get_instance();
 
     static void destroy();
+	
+    void init_duer_link_log(duerLink::duer_link_log_cb_t duer_link_log);
+	
+#ifdef DUERLINK_V2
+    void init_config_network_parameter(duerLink::platform_type speaker_type,
+                                       duerLink::auto_config_network_type autoType,
+                                       std::string devicedID,
+                                       std::string interface);
+
+    void init_discovery_parameter(std::string devicedID, std::string appId, std::string interface);
+#else
 
     void init_config_network_parameter(duerLink::platform_type speaker_type,
                                        duerLink::auto_config_network_type autoType,
@@ -99,19 +122,22 @@ public:
                                        const std::string& interface,
                                        const std::string& bdussfile,
                                        const std::string& clientId);
-    void init_softAp_env_cb();
-    void init_ble_env_cb();
-    void init_wifi_connect_cb();
+									   
     void init_discovery_parameter(const std::string& devicedID,
                                   const std::string& appId,
                                   const std::string& interface,
                                   const std::string& bdussfile);
+#endif
+    void init_softAp_env_cb();
+    void init_ble_env_cb();
+    void init_wifi_connect_cb();
 
     bool set_wpa_conf(bool change_file);
 
     void set_network_observer(NetWorkPingStatusObserver *observer);
     bool ping_network(bool wakeupTrigger);
     void start_network_monitor();
+    void start_verify_network();
 
     void set_networkConfig_observer(duerLink::NetworkConfigStatusObserver* config_listener);
     void set_monitor_observer(NetWorkPingStatusObserver *ping_listener);
@@ -172,6 +198,7 @@ private:
     bool recvPacket(PingResult &pingResult);
     bool ping(std::string host, int count, PingResult& pingResult);
     static void *monitor_work_routine(void *arg);
+    static void *verify_work_routine(void *arg);
     bool check_recovery_network_status();
 
 private:

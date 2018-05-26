@@ -1,33 +1,37 @@
-//
-// Created by nick on 17-12-6.
-//
+/*
+ * Copyright (c) 2017 Baidu, Inc. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 
 #include <string>
 #include <fstream>
 #include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstring>
 #include <algorithm>
 #include <netdb.h>
-#include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
-#include <sys/select.h>
 #include <arpa/inet.h>
-#include <sys/types.h>
 #include <sys/time.h>
-#include <unistd.h>
-#include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
-#include <signal.h>
+#include <csignal>
 #include "LoggerUtils/DcsSdkLogger.h"
 #include "DCSApp/DuerLinkMtkInstance.h"
 #include "DCSApp/Configuration.h"
 #include "DCSApp/DeviceIoWrapper.h"
 #include "duer_link/duer_link_sdk.h"
-#include "duer_link/network_define_public.h"
 
 #include <DeviceTools/PrintTickCount.h>
 
@@ -46,6 +50,7 @@ static string m_target_ssid_prefix;
 static bool m_ble_is_opened = false;
 static int m_ping_interval = 1;
 static int m_network_status = 0;
+static bool m_pinging = false;
 
 DuerLinkMtkInstance* DuerLinkMtkInstance::m_duerLink_mtk_instance = nullptr;
 
@@ -75,27 +80,27 @@ bool system_command(const char* cmd) {
 }
 
 bool check_ap0_interface_status(string ap) {
-        int sockfd;
-        bool ret = false;
-        struct ifreq ifr_mac;
+    int sockfd;
+    bool ret = false;
+    struct ifreq ifr_mac;
 
-        if ((sockfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
-            APP_ERROR("socket create failed.");
-            return false;
-        }
+    if ((sockfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+        APP_ERROR("socket create failed.");
+        return false;
+    }
 
-        memset(&ifr_mac,0,sizeof(ifr_mac));
-        strncpy(ifr_mac.ifr_name, ap.c_str(), sizeof(ifr_mac.ifr_name)-1);
+    memset(&ifr_mac,0,sizeof(ifr_mac));
+    strncpy(ifr_mac.ifr_name, ap.c_str(), sizeof(ifr_mac.ifr_name)-1);
 
-        if ((ioctl(sockfd, SIOCGIFHWADDR, &ifr_mac)) < 0) {
-            APP_ERROR("Mac ioctl failed.");
-        } else {
-            APP_INFO("Mac ioctl suceess.");
-            ret = true;
-        }
-        close(sockfd);
+    if ((ioctl(sockfd, SIOCGIFHWADDR, &ifr_mac)) < 0) {
+        APP_ERROR("Mac ioctl failed.");
+    } else {
+        APP_INFO("Mac ioctl suceess.");
+        ret = true;
+    }
+    close(sockfd);
 
-        return ret;
+    return ret;
 }
 
 bool tmp_wpa_conf(const string ssid, const string pwd, const string path) {
@@ -184,14 +189,14 @@ bool start_wpa_supplicant() {
 
     deviceCommonLib::deviceTools::printTickCount("network_config connect_ap begin.");
 
-	system_command("ifconfig wlan0 0.0.0.0");
+    system_command("ifconfig wlan0 0.0.0.0");
     system_command("killall dhcpcd");
     system_command("killall wpa_supplicant");
-	sleep(1);
+    sleep(1);
     system_command("wpa_supplicant -Dnl80211 -B -i wlan0 -c /data/cfg/wpa_supplicant.conf");
-	system_command("dhcpcd -k wlan0");//udhcpc -b -i wlan0 -q ");
-	sleep(1);
-	system_command("dhcpcd wlan0 &");
+    system_command("dhcpcd -k wlan0");//udhcpc -b -i wlan0 -q ");
+    sleep(1);
+    system_command("dhcpcd wlan0 &");
     deviceCommonLib::deviceTools::printTickCount("network_config connect_ap end.");
 
     return true;
@@ -568,6 +573,10 @@ void DuerLinkMtkInstance::destroy() {
     }
 }
 
+void DuerLinkMtkInstance::init_duer_link_log(duerLink::duer_link_log_cb_t duer_link_log) {
+    duerLinkSdk::get_instance()->init_duer_link_log(duer_link_log);
+}
+
 bool DuerLinkMtkInstance::set_wpa_conf(bool change_file) {
     int skip_line = 0;
     string tmp_conf_path;
@@ -765,6 +774,28 @@ void DuerLinkMtkInstance::start_discover_and_bound() {
     duerLinkSdk::get_instance()->start_device_discover_and_bound();
 }
 
+#ifdef DUERLINK_V2    
+void DuerLinkMtkInstance::init_config_network_parameter(platform_type speaker_type,
+                                                        auto_config_network_type autoType,
+                                                        string devicedID,
+                                                        string interface) {
+    duerLinkSdk::get_instance()->init_config_network_parameter(speaker_type,
+                                                               autoType,
+                                                               devicedID,
+                                                               interface);
+}
+
+void DuerLinkMtkInstance::init_discovery_parameter(string devicedID,
+                                                   string appId,
+                                                   string interface) {
+    //test cuid and access token for linkplay
+//    duerLinkSdk::get_instance()->set_config_json_file("/data/duer/duerLink_config.json");
+
+    duerLinkSdk::get_instance()->init_discovery_parameter(devicedID, appId, interface, "/data/duer/bduss.txt");
+
+}
+#else
+    
 void DuerLinkMtkInstance::init_config_network_parameter(platform_type speaker_type,
                                                         auto_config_network_type autoType,
                                                         const std::string& devicedID,
@@ -789,6 +820,7 @@ void DuerLinkMtkInstance::init_discovery_parameter(const std::string& devicedID,
     duerLinkSdk::get_instance()->init_discovery_parameter(devicedID, appId, interface, bdussfile);
 
 }
+#endif
 
 void DuerLinkMtkInstance::set_networkConfig_observer(NetworkConfigStatusObserver* config_listener) {
     if (config_listener) {
@@ -806,9 +838,9 @@ void DuerLinkMtkInstance::set_monitor_observer(NetWorkPingStatusObserver *ping_l
 }
 
 bool DuerLinkMtkInstance::check_recovery_network_status() {
-//#ifdef MTK8516
+#ifdef MTK8516
     deviceCommonLib::deviceTools::printTickCount("network_config main_thread recovery begin.");
-//#endif
+#endif
 
     if (nullptr != m_pMtkConfigObserver) {
         (m_pMtkConfigObserver)->notify_network_config_status(duerLink::ENetworkRecoveryStart);
@@ -1253,6 +1285,28 @@ void DuerLinkMtkInstance::start_network_monitor() {
 
     pthread_create(&network_config_threadId, nullptr, monitor_work_routine, this);
     pthread_detach(network_config_threadId);
+}
+
+void *DuerLinkMtkInstance::verify_work_routine(void *arg) {
+    auto thread = static_cast<DuerLinkMtkInstance*>(arg);
+    APP_INFO("verify_work_routine begin");
+    m_pinging = true;
+    thread->ping_network(true);
+    m_pinging = false;
+    APP_INFO("verify_work_routine end");
+
+    return nullptr;
+}
+
+void DuerLinkMtkInstance::start_verify_network() {
+    if (!m_pinging) {
+        pthread_t network_verify_threadId;
+
+        pthread_create(&network_verify_threadId, nullptr, verify_work_routine, this);
+        pthread_detach(network_verify_threadId);
+    } else {
+        APP_INFO("start_verify_network m_pinging is TRUE, return");
+    }
 }
 
 }  // namespace application

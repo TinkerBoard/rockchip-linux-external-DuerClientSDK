@@ -97,7 +97,7 @@ public:
      *     @return LocalMediaPlayerStatus 播放是否成功
      * \endif
      */
-    virtual LocalMediaPlayerStatus play() = 0;
+    virtual LocalMediaPlayerStatus play(const LocalMediaPlayerName& name) = 0;
 
     /**
      * \if english
@@ -114,7 +114,7 @@ public:
      *     @return LocalMediaPlayerStatus 结束播放是否成功
      * \endif
      */
-    virtual LocalMediaPlayerStatus stop() = 0;
+    virtual LocalMediaPlayerStatus stop(const LocalMediaPlayerName& name) = 0;
 
     /**
      * \if english
@@ -132,7 +132,7 @@ public:
      *     @return LocalMediaPlayerStatus 暂停播放是否成功
      * \endif
      */
-    virtual LocalMediaPlayerStatus pause() = 0;
+    virtual LocalMediaPlayerStatus pause(const LocalMediaPlayerName& name) = 0;
 
     /**
      * \if english
@@ -149,7 +149,7 @@ public:
      *     @return LocalMediaPlayerStatus 继续播放是否成功
      * \endif
      */
-    virtual LocalMediaPlayerStatus resume() = 0;
+    virtual LocalMediaPlayerStatus resume(const LocalMediaPlayerName& name) = 0;
 
     /**
      * \if english
@@ -160,7 +160,7 @@ public:
      *     @return LocalMediaPlayerStatus 播放下一首是否成功
      * \endif
      */
-    virtual LocalMediaPlayerStatus playNext() = 0;
+    virtual LocalMediaPlayerStatus playNext(const LocalMediaPlayerName& name) = 0;
 
     /**
      * \if english
@@ -171,7 +171,7 @@ public:
      *     @return LocalMediaPlayerStatus 播放上一首是否成功
      * \endif
      */
-    virtual LocalMediaPlayerStatus playPrevious() = 0;
+    virtual LocalMediaPlayerStatus playPrevious(const LocalMediaPlayerName& name) = 0;
 
     /**
      * \if english

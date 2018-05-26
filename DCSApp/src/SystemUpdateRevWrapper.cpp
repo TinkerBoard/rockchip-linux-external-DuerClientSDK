@@ -198,6 +198,7 @@ void SystemUpdateRevWrapper::mainLoop() {
     APP_INFO("SystemUpdateRevWrapper mainLoop thread started");
     int msgqid;
     struct msgstruct msgs;
+    static struct msgstruct msgs_bak;
     std::string updatableStr, notUpdatableStr, updatingStr;
     std::string updateFailStr, updateSuccessStr;
 
@@ -216,10 +217,15 @@ void SystemUpdateRevWrapper::mainLoop() {
             return;
         }
 
+        if (msgs.msgcase != MSG_CASE_UPDATING ){
+            memset( (void*)&msgs_bak, 0, sizeof(msgs_bak));
+        }
+
         switch (msgs.msgcase) {
         case MSG_CASE_UPDATEABLE:
             APP_INFO("UPDATABLE");
             updatableStr = Json(std::string("UPDATABLE"), getVerStr(msgs.msgtext, ':'), getVerDsc(msgs.msgtext, ':'),std::string(""));
+            msgs_bak = msgs;
             DuerLinkWrapper::getInstance()->sendDlpMsgToAllClients(std::string(updatableStr));
             break;
 
@@ -231,7 +237,7 @@ void SystemUpdateRevWrapper::mainLoop() {
 
         case MSG_CASE_UPDATING:
             APP_INFO("UPDATING");
-            updatingStr = Json(std::string("UPDATING"), std::string(""), std::string(""),std::string(TTS_STR_UPDATING));
+            updatableStr = Json(std::string("UPDATING"), getVerStr(msgs_bak.msgtext, ':'), getVerDsc(msgs_bak.msgtext, ':'),std::string(TTS_STR_UPDATING));
             DuerLinkWrapper::getInstance()->sendDlpMsgToAllClients(std::string(updatingStr));
             DeviceIoWrapper::getInstance()->ledOtaDoing(); //reuse net connect led effect
             SoundController::getInstance()->playTts(TTS_STR_UPDATING, false, enterSleepModeAndLightLed);
@@ -259,7 +265,7 @@ void SystemUpdateRevWrapper::mainLoop() {
         case MSG_CASE_GET_STATUS: {
             APP_INFO("GET DEVICES STATUS");
             char cmd[100];
-            long int activeTime = ActivityMonitorSingleton::getInstance()->getLastestActiveTimestamp();
+            long int activeTime = 0; //ActivityMonitorSingleton::getInstance()->getLastestActiveTimestamp();
             APP_INFO("SystemUpdateRevWrapper get lastest active timestamp is %ld", activeTime);
             sprintf(cmd, "upgrade_silent_client 4 %ld",
                     activeTime); //set active time to upgrade server

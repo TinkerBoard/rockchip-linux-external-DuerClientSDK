@@ -35,6 +35,12 @@ public:
     virtual void btDisconnect() {};
 
     virtual void btPowerOff() {};
+
+    virtual void dlnaStartPlay() {};
+
+    virtual void dlnaStopPlay() {};
+
+    virtual void dlnaPausePlay() {};
 };
 
 enum TouchEvent {
@@ -129,6 +135,12 @@ public:
 
     std::string getDeviceId();
 
+    /**
+     * 获取设备硬件版本
+     * @return std::string 硬件版本
+     */
+    std::string getDeviceVersion();
+
     std::string getVersion();
 
     /// set ApplicationManager
@@ -149,6 +161,8 @@ public:
     void handleMicrophone();
 
     bool isBtPlaying();
+
+    bool isDlnaPlaying();
 
     static void deviceioWrapperBtSoundPlayFinished();
 
@@ -201,6 +215,8 @@ public:
 
     std::string getWifiBssid();
 
+    std::string getlocalName();
+
     bool isRecognizing() const;
 
     void setRecognizing(bool isRecognizing);
@@ -233,7 +249,7 @@ public:
 
     int transmitInfrared(std::string& infraredCode);
 
-    bool isPlayAndPause() const;
+    bool isPauseBtnClicked() const;
 
 private:
     DeviceIoWrapper();
@@ -263,7 +279,7 @@ private:
 
     void setSleepMode(bool isSleepMode);
 
-    void setPlayAndPause(bool isPlayAndPause);
+    void setPauseBtnFlag(bool flag);
 
     void handlePlayAndPause();
 
@@ -281,6 +297,9 @@ private:
 
     //标识蓝牙是否正在播放
     bool m_isBtPlaying;
+
+    //DLNA
+    bool m_isDlnaPlaying;
 
     std::shared_ptr<ApplicationManager> m_applicationManager;
 
@@ -306,7 +325,7 @@ private:
 
     bool m_sleepMode;
 
-    bool m_isPlayAndPause;
+    bool m_pauseBtnClicked;
 };
 
 }  // namespace application

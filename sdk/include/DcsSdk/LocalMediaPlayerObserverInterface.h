@@ -163,7 +163,14 @@ enum LocalMediaPlayerName {
      *     @brief 酷狗音乐播放
      * \endif
      */
-    KUGOU
+    KUGOU,
+    /**
+     * \if english
+     *  @brief dlna music
+     *  \else
+     *   @brief dlna 音乐播放
+     */
+    DLNA
 };
 
 /**

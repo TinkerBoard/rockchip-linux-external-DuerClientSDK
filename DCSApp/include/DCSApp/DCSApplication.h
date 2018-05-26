@@ -22,6 +22,7 @@
 #include "DeviceIoWrapper.h"
 #include "DuerLinkWrapper.h"
 #include "SystemUpdateRevWrapper.h"
+#include "DeviceTools/DyLibrary.h"
 #include "DCSKeyHandler.h"
 #ifdef Build_CrabSdk
 #include "crab_sdk.h"
@@ -163,6 +164,24 @@ private:
      * \endif
      */
     deviceCommonLib::deviceTools::Timer m_detectNTPTimer;
+
+    /**
+    * \if english
+    *     @brief the audio library name.
+    * \else
+    *     @brief 音频库名。
+    * \endif
+    */
+    std::string m_audioLibName;
+
+    /**
+    * \if english
+    *     @brief the audio dynamic library.
+    * \else
+    *     @brief 音频动态库。
+    * \endif
+    */
+    std::shared_ptr<deviceCommonLib::deviceTools::DyLibrary> m_audioDyLib;
 
     std::unique_ptr<DCSKeyHandler> m_keyHandler;
 };

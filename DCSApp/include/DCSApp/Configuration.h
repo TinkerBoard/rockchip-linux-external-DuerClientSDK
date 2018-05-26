@@ -63,6 +63,10 @@ public:
 
     void setAlertsVol(unsigned int volume);
 
+    bool getDebug() const;
+
+    std::string getAudioLibName() const;
+
 private:
     Configuration();
 
@@ -94,6 +98,8 @@ private:
     std::string m_deviceId;
     std::string m_ssidPrefix;
     std::string m_recordAudioPath;
+    std::string m_audioLibName;
+    bool        m_debug;
 };
 
 }  // namespace application

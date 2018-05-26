@@ -68,9 +68,13 @@ public:
     void setNetworkStatus(DuerLinkNetworkStatus networkStatus);
 
     void wakeupDuerLinkNetworkStatus();
-
+#ifdef DUERLINK_V2
+    void initDuerLink();
+    void startDiscoverAndBound(const std::string& client_id);
+#else
     void initDuerLink(const std::string& bdussFilePath, const std::string& clientId);
-
+    void startDiscoverAndBound(const std::string& client_id, const std::string& bdussfile);
+#endif
     void startNetworkRecovery();
 
     void stopNetworkRecovery();
@@ -87,12 +91,13 @@ public:
 
     bool bleRecvData(void *data, int len);
 
-    void startDiscoverAndBound(const std::string& client_id, const std::string& bdussfile);
 
     std::string NotifyReceivedData(const std::string& jsonPackageData, int iSessionID = 0) override;
-
+#ifdef DUERLINK_V2
+    std::string notify_received_bduss(const std::string& bdussValue);
+#else
     std::string notify_received_bduss(const std::string& bdussValue) override;
-
+#endif
     bool sendDlpMsgToAllClients(const std::string& sendBuffer);
 
     /**
@@ -137,6 +142,8 @@ public:
     void setFromConfigNetwork(bool isFromConfigNetwork);
 
     void waitLogin();
+
+    static void logFunction(const char* msg, ...);
 
 private:
     DuerLinkWrapper();

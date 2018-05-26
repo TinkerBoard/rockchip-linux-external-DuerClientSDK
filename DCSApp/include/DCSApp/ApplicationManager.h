@@ -18,7 +18,7 @@
 #define DUEROS_DCS_APP_SAMPLEAPP_APPLICATIONMANAGER_H_
 
 #include <DcsSdk/DcsSdk.h>
-#include "PortAudioMicrophoneWrapper.h"
+#include "DCSApp/Audio/AudioMicrophoneInterface.h"
 
 namespace duerOSDcsApp {
 namespace application {
@@ -77,6 +77,11 @@ public:
      * @param reason
      */
     void onConnectionStatusChanged(const Status status, const ChangedReason reason) override;
+
+    /**
+     * Inform that the SDK had canceled the ASR request.
+     */
+    void onSpeechAsrCanceled() override;
 
     /**
      * DCS set speaker volume
@@ -255,7 +260,7 @@ public:
      * set microphone wrapper
      * @param micWrapper
      */
-    void setMicrophoneWrapper(std::shared_ptr<PortAudioMicrophoneWrapper> micWrapper);
+    void setMicrophoneWrapper(std::shared_ptr<AudioMicrophoneInterface> micWrapper);
 
     /**
      * DCS open microphone
@@ -346,7 +351,7 @@ private:
     std::shared_ptr<duerOSDcsSDK::sdkInterfaces::DcsSdk> m_dcsSdk;
 
     /// the microphone wrapper
-    std::shared_ptr<PortAudioMicrophoneWrapper> m_micWrapper;
+    std::shared_ptr<AudioMicrophoneInterface> m_micWrapper;
 };
 
 }  // namespace application

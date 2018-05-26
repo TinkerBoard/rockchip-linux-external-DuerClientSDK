@@ -1,35 +1,72 @@
 {
     "alertsCapabilityAgent":{
-        "databaseFilePath":"/data/cfg/alerts/alerts.db",
-        "downloadAssetsEnabled":false
+        "databaseFilePath":"./alerts.db",
+        "downloadAssetsEnabled":false,
+        "alarmAudioFilePath":"./appresources/default_alarm.wav",
+        "alarmShortAudioFilePath":"./appresources/default_alarm.wav",
+        "timerAudioFilePath":"./appresources/default_alarm.wav",
+        "timerShortAudioFilePath":"./appresources/default_alarm.wav",
+        "renderClockFilePath":"./appresources/clock.mp3"
     },
     "certifiedSender":{
-        "databaseFilePath":"/data/cfg/certifiedSender.db"
+        "databaseFilePath":"./certifiedSender.db"
     },
     "authDelegate":{
-        "clientId":"0G0cSPq0bLbDoQaHCi7e3cOcUXCikEll"
+        "clientId":"9XxAvLBSY6iRwpyvEkdp7UeNdVg0iMvo",
+	"authStrategyLib":"./lib/libBdussOAuth.so"
+    },
+    "dcsClient":{
+	        "dcsEndPoint":"https://dueros-h2.baidu.com"
     },
     "dcsSdkLogger":{
-        "clickLogFilename":"/data/cfg/click.log",
+        "clickLogFilename":"./click.log",
         "clickLogUrl":"https://xiaodu.baidu.com/saiya/log?",
-        "dcsVelocityLogFilename":"/data/cfg/dcsVelocity.log"
+        "dcsVelocityLogFilename":"./dcsVelocity.log"
+    },
+    "wifi":{
+	        "wifiLocation":"/data/duer/wifiLocation.json"
+    },
+    "botDebug":{
+        "botDebugSwitch":false,
+        "botId":"adb"
+    },
+    "http2Stream":{
+        "userAgent":"Linux DcsSdk/0.7.0",
+        "debugSwitch":false,
+        "debugBoss":"cq02-ps-spider01.cq02.baidu.com:8984"
+    },
+    "http2Transport":{
+        "downchannelUrlPathExtension":"/dcs/v1/directives",
+        "eventUrlPathExtension":"/dcs/v1/events",
+        "pingUrlPathExtension":"/dcs/v1/ping"
     },
     "libcurlUtils":{
-        "curloptCapath":"/etc/ssl/certs/",
-        "dcsSandbox":false
+        "curloptCapath":"/etc/ssl/certs/"
     },
     "dcssdkVersion":{
-        "version":"0.0.1"
+        "version":"0.3.4"
     },
-    "baiduSpeechSDK":{
-        "wakeupResourceFilename":"/data/resources/esis_20180330_test-20180409160608-YZY7pg.pkg",
-        "vadResourceFilename":"/data/resources/esis_vad_model_20171023.pkg",
-        "serverUrl":"",
-        "eventUrl":"",
-	"productID":"8001",
-        "protocol":"800",
-        "ttsParam":"",
-        "bdsLogLevel":"6",
-        "dcsToken":""
-	}
+    "wakeup":{
+        "libraryVersion":"0.3.0",
+        "modelVersion":"0.3.0",
+        "commonWakeup":{
+            "kittResourceFilename":"./resources/common.res",
+            "kittModelFilename":"./resources/xiaodu_l12r10_sen_35_35_32_highsen_40_40_39_0104.umdl",
+            "keyWords":"小度小度,小度小度,小度小度",
+            "sensitivity":"0.35,0.35,0.32",
+            "highSensitivity":"0.4,0.4,0.39",
+            "audioGain":2,
+            "frontEnd":true
+        }
+    },
+    "speechParameters":{
+        "speech_pid":"1400",
+        "speech_key":"com.baidu.dumi.dcs31.rk3308",
+        "speech_dcsAsrUrl":"https://dueros-voice.baidu.com/dcs_asr",
+        "speech_dcsEventUrl":"https://dueros-voice.baidu.com/dcs_event",
+        "speechsdk_version":"3.1.8.3e76721",
+        "use_speechLink":"1",
+        "oneShot_test":"0",
+        "log_file":"/data/duer/speechsdk.log"
+    }
 }

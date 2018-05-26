@@ -17,26 +17,46 @@
 #include "DCSApp/DCSApplication.h"
 #include <algorithm>
 #include <fstream>
-#include "DCSApp/ApplicationManager.h"
-#include "DCSApp/VoiceAndTouchWakeUpObserver.h"
-#include "DCSApp/Configuration.h"
-#include "MediaPlayer/TtsPlayerProxy.h"
-#include "MediaPlayer/MediaPlayerProxy.h"
-#include "MediaPlayer/AlertsPlayerProxy.h"
-#include "MediaPlayer/LocalPlayerProxy.h"
-#ifdef LOCALTTS
-#include "MediaPlayer/LocalTtsProxy.h"
-#endif
-#include "MediaPlayer/BlueToothPlayerProxy.h"
 #include "DCSApp/RecordAudioManager.h"
+#include "DCSApp/ApplicationManager.h"
+
+#include "DCSApp/VoiceAndTouchWakeUpObserver.h"
+
+#include "DCSApp/Configuration.h"
+#include "TtsPlayerProxy.h"
+#include "MediaPlayerProxy.h"
+#include "AlertsPlayerProxy.h"
+#include "LocalPlayerProxy.h"
+#include "BluetoothPlayerImpl.h"
+#include "DlnaPlayerImpl.h"
+#include "Mp3UrlPlayerImpl.h"
+#include "Mp3TtsPlayerImpl.h"
+#include "Mp3FilePlayerImpl.h"
+#include "PcmTtsPlayerImpl.h"
+#include "LocalTtsPlayerImpl.h"
+#ifdef LOCALTTS
+#include "LocalTtsProxy.h"
+#endif
+#include "BlueToothPlayerProxy.h"
 #include "LoggerUtils/DcsSdkLogger.h"
 #include "DCSApp/ActivityMonitorSingleton.h"
 
+#ifdef DUEROS_DLNA
+#include "Dlna/DlnaDmrSdk.h"
+#include "Dlna/DlnaDmrOutputFfmpeg.h"
+#endif
+typedef std::shared_ptr<duerOSDcsApp::application::AudioMicrophoneInterface> createT(std::shared_ptr<duerOSDcsSDK::sdkInterfaces::DcsSdk> dcsSdk);
 namespace duerOSDcsApp {
 namespace application {
 
+#ifdef MTK8516
+#define PCM_DEVICE "track:10"
+#else
+#define PCM_DEVICE "default"
+#endif
+
 /// The config path of DCSSDK
-static const std::string PATH_TO_CONFIG = "/data/resources/config.json";
+static const std::string PATH_TO_CONFIG = "./resources/config.json";
 
 #ifdef MTK8516
 /// The runtime config path of DCSSDK
@@ -45,8 +65,9 @@ static const std::string PATH_TO_RUNTIME_CONFIG = "/data/duer/runtime.json";
 static const std::string PATH_TO_BDUSS_FILE = "/data/duer/bduss.txt";
 #else
 /// The runtime config path of DCSSDK
-static const std::string PATH_TO_RUNTIME_CONFIG = "/data/cfg/runtime.json";
-static const std::string PATH_TO_BDUSS_FILE = "/data/cfg/bduss.txt";
+static const std::string PATH_TO_RUNTIME_CONFIG = "./resources/runtime.json";
+
+static const std::string PATH_TO_BDUSS_FILE = "./bduss.txt";
 #endif
 
 std::unique_ptr<DCSApplication> DCSApplication::create() {
@@ -66,12 +87,7 @@ void DCSApplication::run() {
 }
 
 bool DCSApplication::initialize() {
-
-    if (!Configuration::getInstance()->readConfig()) {
-        APP_ERROR("Failed to init Configuration!");
-        return false;
-    }
-
+    m_audioDyLib = std::make_shared<deviceCommonLib::deviceTools::DyLibrary>();
     DeviceIoWrapper::getInstance()->initCommonVolume(Configuration::getInstance()->getCommVol());
     DeviceIoWrapper::getInstance()->initAlertVolume(Configuration::getInstance()->getAlertsVol());
     m_keyHandler = DCSKeyHandler::create(DeviceIoWrapper::getInstance());
@@ -136,14 +152,27 @@ bool DCSApplication::initialize() {
     parameters.setConnectionObservers(applicationManager);
     parameters.setApplicationImplementation(applicationManager);
     parameters.setLocalMediaPlayer(blueToothPlayer);
+    parameters.setDebugFlag(Configuration::getInstance()->getDebug());
 
+#if (defined KITTAI_KEY_WORD_DETECTOR) || (defined BDSAI_KEY_WORD_DETECTOR)
     // This observer is notified any time a keyword is detected and notifies the DCSSDK to start recognizing.
     auto voiceAndTouchWakeUpObserver = std::make_shared<VoiceAndTouchWakeUpObserver>();
     parameters.setKeyWordObserverInterface(voiceAndTouchWakeUpObserver);
+    auto keywordInterface = parameters.getKeyWordObserverInterface();
+    keywordInterface->printInfo();
+    printf("%s---->func %s Line %d----------\n", __FILE__, __FUNCTION__, __LINE__);
+#endif
 
+    auto voiceAndTouchWakeUpObserver = std::make_shared<VoiceAndTouchWakeUpObserver>();
+    parameters.setKeyWordObserverInterface(voiceAndTouchWakeUpObserver);
+    auto keywordInterface = parameters.getKeyWordObserverInterface();
+    keywordInterface->printInfo();
 #ifdef LOCALTTS
     parameters.setLocalTtsMediaPlayer(localTtsPlayer);
 #endif
+    duerOSDcsSDK::sdkInterfaces::DcsSdkParameters t_parameters;
+    t_parameters = parameters;
+    APP_ERROR("before dcssdk create!");
     m_dcsSdk = duerOSDcsSDK::sdkInterfaces::DcsSdk::create(parameters);
 
     if (!m_dcsSdk) {
@@ -151,27 +180,77 @@ bool DCSApplication::initialize() {
         return false;
     }
 #if 0
-    std::shared_ptr<PortAudioMicrophoneWrapper> micWrapper = PortAudioMicrophoneWrapper::create(m_dcsSdk);
-    if (!micWrapper) {
-        APP_ERROR("Failed to create PortAudioMicrophoneWrapper!");
+    m_audioLibName = Configuration::getInstance()->getAudioLibName();
+
+    bool ret = m_audioDyLib->load(m_audioLibName);
+    if (!ret) {
+        LOGGER_ERROR(LX("initialize Failed").d("reason", "load library error"));
         return false;
     }
+    createT * m_create = (createT *)m_audioDyLib->getSym("create");
+
+    if (!m_create) {
+        LOGGER_ERROR(LX("initialize Failed").d("reason", "get symbol error"));
+        return false;
+    }
+
+    std::shared_ptr<AudioMicrophoneInterface>  micWrapper = m_create(m_dcsSdk);
+
     micWrapper->setRecordDataInputCallback(recordDataInputCallback);
 
     applicationManager->setMicrophoneWrapper(micWrapper);
 #endif
-
     applicationManager->setDcsSdk(m_dcsSdk);
     blueToothPlayer->setDcsSdk(m_dcsSdk);
 
+    //create player client and attach to the player proxy. you may replace playerclient with your own
+    auto mp3UrlPlayerImpl = mediaPlayer::Mp3UrlPlayerImpl::create(configuration->getMusicPlaybackDevice());
+    mp3UrlPlayerImpl->registerListener(audioMediaPlayer);
+    audioMediaPlayer->setImpl(mp3UrlPlayerImpl);
+
+    auto mp3TtsPlayerImpl = mediaPlayer::Mp3TtsPlayerImpl::create(configuration->getTtsPlaybackDevice());
+    mp3TtsPlayerImpl->registerListener(speakMediaPlayer);
+    speakMediaPlayer->setMp3TtsImpl(mp3TtsPlayerImpl);
+
+    auto pcmTtsPlayerImpl = mediaPlayer::PcmTtsPlayerImpl::create(PCM_DEVICE);
+    pcmTtsPlayerImpl->registerListener(speakMediaPlayer);
+    speakMediaPlayer->setPcmTtsImpl(pcmTtsPlayerImpl);
+    auto mp3AlertPlayerImpl = mediaPlayer::Mp3FilePlayerImpl::create(configuration->getAlertPlaybackDevice());
+    mp3AlertPlayerImpl->registerListener(alertsMediaPlayer);
+    alertsMediaPlayer->setImpl(mp3AlertPlayerImpl);
+
+    auto mp3FilePlayerImpl = mediaPlayer::Mp3FilePlayerImpl::create(configuration->getInfoPlaybackDevice());
+    mp3FilePlayerImpl->registerListener(localPromptPlayer);
+    localPromptPlayer->setImpl(mp3FilePlayerImpl);
+
+    auto localTtsPlayerImpl = mediaPlayer::LocalTtsPlayerImpl::create(configuration->getNattsPlaybackDevice(),
+                                                                          "./resources/");
+    localTtsPlayerImpl->registerListener(localTtsPlayer);
+    localTtsPlayer->setImpl(localTtsPlayerImpl);
+
+    auto btPlayerImpl = mediaPlayer::BluetoothPlayerImpl::create();
+    btPlayerImpl->registerListener(blueToothPlayer);
+    blueToothPlayer->setBluetoothImpl(btPlayerImpl);
+#ifdef DUEROS_DLNA
+    auto dlnaPlayerImpl = mediaPlayer::DlnaPlayerImpl::create();
+    dlnaPlayerImpl->registerListener(blueToothPlayer);
+    blueToothPlayer->setDlnaImpl(dlnaPlayerImpl);
+#endif
+//#if (defined KITTAI_KEY_WORD_DETECTOR) || (defined BDSAI_KEY_WORD_DETECTOR)
     voiceAndTouchWakeUpObserver->setDcsSdk(m_dcsSdk);
+//#endif
 
 #ifdef LOCALTTS
     SoundController::getInstance()->addObserver(localTtsPlayer);
 #endif
     SoundController::getInstance()->addObserver(localPromptPlayer);
+//#if (defined KITTAI_KEY_WORD_DETECTOR) || (defined BDSAI_KEY_WORD_DETECTOR)
     DeviceIoWrapper::getInstance()->addObserver(voiceAndTouchWakeUpObserver);
-    DeviceIoWrapper::getInstance()->addObserver(blueToothPlayer);
+//#endif
+    DeviceIoWrapper::getInstance()->addObserver(btPlayerImpl);
+#ifdef DUEROS_DLNA
+    DeviceIoWrapper::getInstance()->addObserver(dlnaPlayerImpl);
+#endif
     DeviceIoWrapper::getInstance()->setApplicationManager(applicationManager);
     applicationManager->microphoneOn();
     DeviceIoWrapper::getInstance()->volumeChanged();
@@ -198,9 +277,17 @@ bool DCSApplication::initialize() {
     m_dcsSdk->notifySystemTimeReady();
     m_dcsSdk->notifyNetworkReady(true, "testWifi");
 #endif
-
+#ifdef DUERLINK_V2
+    DuerLinkWrapper::getInstance()->startDiscoverAndBound(m_dcsSdk->getClientId());
+#else
     DuerLinkWrapper::getInstance()->startDiscoverAndBound(m_dcsSdk->getClientId(), PATH_TO_BDUSS_FILE);
-
+#endif
+#ifdef DUEROS_DLNA
+    std::shared_ptr<dueros_dlna::IOutput> sp = std::make_shared<dueros_dlna::OutputFfmpeg>();    
+    dueros_dlna::DlnaDmrSdk dlnaDmrSdk;	 
+    dlnaDmrSdk.add_output_module(sp);	  
+    dlnaDmrSdk.start();
+#endif
     m_systemUpdateRevWrapper = SystemUpdateRevWrapper::create();
 
     return true;
@@ -210,7 +297,7 @@ void DCSApplication::detectNTPReady() {
     if (access("/tmp/ntp_successful", F_OK) == 0) {
         m_dcsSdk->notifySystemTimeReady();
         m_detectNTPTimer.stop();
-        ActivityMonitorSingleton::getInstance()->updateActiveTimestamp();
+        ActivityMonitorSingleton::getInstance()->updatePlayerStatus(PLAYER_STATUS_OFF);
     }
 }
 
@@ -221,7 +308,7 @@ void DCSApplication::networkReady() {
 
 #ifdef Build_CrabSdk
     /**
-     * 网络连接成功，调用该接口上传上次崩溃转存的Crash文件
+     * 缃戠粶杩炴帴鎴愬姛锛岃皟鐢ㄨ鎺ュ彛涓婁紶涓婃宕╂簝杞瓨鐨凜rash鏂囦欢
      */
     APP_INFO("crab upload crash dump file");
     baidu_crab_sdk::CrabSDK::upload_crash_async();

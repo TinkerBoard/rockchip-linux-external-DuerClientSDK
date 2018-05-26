@@ -17,13 +17,6 @@
 #include <fstream>
 #include <algorithm>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <net/if.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <sys/ioctl.h>
-#include <vector>
-#include <string>
 #include "LoggerUtils/DcsSdkLogger.h"
 #include "DeviceIo/DeviceIo.h"
 #include "DCSApp/DuerLinkWrapper.h"
@@ -38,7 +31,7 @@ using namespace duerLink;
 using std::string;
 using std::vector;
 
-DuerLinkWrapper *DuerLinkWrapper::s_duerLinkWrapper = NULL;
+DuerLinkWrapper *DuerLinkWrapper::s_duerLinkWrapper = nullptr;
 pthread_once_t  DuerLinkWrapper::s_initOnce = PTHREAD_ONCE_INIT;
 pthread_once_t  DuerLinkWrapper::s_destroyOnce = PTHREAD_ONCE_INIT;
 
@@ -78,15 +71,39 @@ void DuerLinkWrapper::setCallback(IDuerLinkWrapperCallback *callback) {
     m_callback = callback;
 }
 
+void DuerLinkWrapper::logFunction(const char* msg, ...) {
+    va_list arg_ptr;
+    char msg_buff[30720] = { 0 };
+
+    va_start(arg_ptr, msg);
+    vsnprintf(msg_buff, 30720 , msg, arg_ptr);
+    va_end(arg_ptr);
+
+    LINK_INFO(msg_buff);
+}
+
+#ifdef DUERLINK_V2    
+void DuerLinkWrapper::initDuerLink() {
+/*
+    DuerLinkMtkInstance::get_instance()->init_config_network_parameter(duerLink::platform_type::EHodor,
+                                                                       duerLink::auto_config_network_type::EAll,
+                                                                       DeviceIoWrapper::getInstance()->getDeviceId(),
+                                                                       "ap0");
+*/
+#else
 void DuerLinkWrapper::initDuerLink(const std::string& bdussFilePath, const std::string& clientId) {
-
-//    DuerLinkMtkInstance::get_instance()->init_config_network_parameter(duerLink::platform_type::EHodor,
-//                                                                       duerLink::auto_config_network_type::EAll,
-//                                                                       DeviceIoWrapper::getInstance()->getDeviceId(),
-//                                                                       "ap0",
-//                                                                       bdussFilePath,
-//                                                                       clientId);
-
+/*
+    DuerLinkMtkInstance::get_instance()->init_config_network_parameter(duerLink::platform_type::EHodor,
+                                                                       duerLink::auto_config_network_type::EAll,
+                                                                       DeviceIoWrapper::getInstance()->getDeviceId(),
+                                                                       "ap0",
+                                                                       bdussFilePath,
+                                                                       clientId);
+*/
+#endif
+    if (!Configuration::getInstance()->getDebug()) {
+        DuerLinkMtkInstance::get_instance()->init_duer_link_log(logFunction);
+    }
     DuerLinkMtkInstance::get_instance()->set_networkConfig_observer(this);
 
     DuerLinkMtkInstance::get_instance()->set_monitor_observer(this);
@@ -135,7 +152,8 @@ void DuerLinkWrapper::setNetworkStatus(DuerLinkNetworkStatus networkStatus) {
 
 void DuerLinkWrapper::verifyNetworkStatus(bool wakeupTrigger) {
     APP_INFO("verifyNetworkStatus wakeupTrigger:%d", wakeupTrigger);
-    DuerLinkMtkInstance::get_instance()->ping_network(true);
+    DuerLinkMtkInstance::get_instance()->start_verify_network();
+    APP_INFO("verifyNetworkStatus wakeupTrigger end");
 }
 
 void DuerLinkWrapper::notify_network_config_status(duerLink::notify_network_status_type notify_type) {
@@ -352,7 +370,14 @@ void DuerLinkWrapper::networkLinkFailed() {
         framework::DeviceIo::getInstance()->rmOtaFile();
     }
 }
-
+#ifdef DUERLINK_V2    
+void DuerLinkWrapper::startDiscoverAndBound(const string& client_id) {
+    DuerLinkMtkInstance::get_instance()->init_discovery_parameter(DeviceIoWrapper::getInstance()->getDeviceId()
+                                                                         , client_id, "eth0");
+    DuerLinkMtkInstance::get_instance()->set_dlp_data_observer(this);
+    DuerLinkMtkInstance::get_instance()->start_discover_and_bound();
+}
+#else
 void DuerLinkWrapper::startDiscoverAndBound(const string& client_id, const std::string& bdussfile) {
     DuerLinkMtkInstance::get_instance()->init_discovery_parameter(DeviceIoWrapper::getInstance()->getDeviceId(),
                                                                   client_id,
@@ -361,6 +386,7 @@ void DuerLinkWrapper::startDiscoverAndBound(const string& client_id, const std::
     DuerLinkMtkInstance::get_instance()->set_dlp_data_observer(this);
     DuerLinkMtkInstance::get_instance()->start_discover_and_bound();
 }
+#endif
 
 string DuerLinkWrapper::NotifyReceivedData(const string& jsonPackageData, int iSessionID) {
     if (m_callback) {

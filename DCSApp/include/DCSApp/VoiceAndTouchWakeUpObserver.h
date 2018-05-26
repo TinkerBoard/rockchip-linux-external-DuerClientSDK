@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <DcsSdk/DcsSdk.h>
+#include <DcsSdk/KeyWordObserverInterface.h>
 #include "DCSApp/DeviceIoWrapper.h"
 
 namespace duerOSDcsApp {
@@ -43,8 +44,9 @@ public:
             std::string keyword,
             uint64_t beginIndex,
             uint64_t endIndex,
-            std::string requestId,
-            int wake_dir) override;
+			int wake_dir) override;
+
+    void printInfo() override;
 
     void touchStartAsr() override;
 
@@ -59,8 +61,7 @@ private:
                          uint64_t endIndex =
                          sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX,
                          std::string keyword = "",
-                         std::string requestId = "",
-                         int wake_dir = -1);
+						 int wake_dir = -1);
 };
 
 }  // namespace application

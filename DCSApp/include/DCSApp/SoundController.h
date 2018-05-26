@@ -18,7 +18,7 @@
 #define DUEROS_DCS_APP_SAMPLEAPP_SOUNDCONTROLLER_H_
 
 #include <DcsSdk/LocalSourcePlayerInterface.h>
-#include "MediaPlayer/RapidPcmPlayer.h"
+#include "PcmFilePlayerImpl.h"
 #include <pthread.h>
 #include <string>
 #include <unordered_set>
@@ -365,7 +365,7 @@ private:
      *     @brief 调节音量的音效播放器。
      * \endif
      */
-    mediaPlayer::RapidPcmPlayer *m_pcmPlayer;
+    mediaPlayer::PcmFilePlayerImpl *m_pcmPlayer;
 
     /**
      * \if english
