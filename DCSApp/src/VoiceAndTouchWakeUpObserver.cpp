@@ -38,12 +38,11 @@ VoiceAndTouchWakeUpObserver::VoiceAndTouchWakeUpObserver() {
 
 void VoiceAndTouchWakeUpObserver::onKeyWordDetected(std::string keyword,
                                                     uint64_t beginIndex,
-                                                    uint64_t endIndex,
-													int wake_dir) {
+                                                    uint64_t endIndex) {
     APP_INFO("VoiceAndTouchWakeUpObserver onKeyWordDetected:%s", keyword.c_str());
     printf("VoiceAndTouchWakeUpObserver onKeyWordDetected:%s\n", keyword.c_str());
     DeviceIoWrapper::getInstance()->setRecognizing(true);
-    wakeupTriggered(true, beginIndex, endIndex, keyword, wake_dir);
+    wakeupTriggered(true, beginIndex, endIndex, keyword);
 
 #if 0
     if (endIndex != sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX &&
@@ -96,6 +95,10 @@ void VoiceAndTouchWakeUpObserver::onKeyWordDetected(std::string keyword,
 #endif
 }
 
+void VoiceAndTouchWakeUpObserver::onLocationDetected(int location) {
+    printf("VoiceAndTouchWakeUpObserver onLocationDetected:%d\n", location);
+}
+
 void VoiceAndTouchWakeUpObserver::printInfo() {
     printf("%s------>Line %d--------\n", __FUNCTION__, __LINE__);
 }
@@ -109,8 +112,7 @@ void VoiceAndTouchWakeUpObserver::touchStartAsr() {
 void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
                                                   uint64_t beginIndex,
                                                   uint64_t endIndex,
-                                                  std::string keyword,
-												  int wake_dir) {
+                                                  std::string keyword) {
 #if 1
     //BDS SDK 不判断网络状态
     printf("\n============= wakeup trigger==========\n");
@@ -120,10 +122,10 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
 
     if (is_voice_wakeup) {
 
-        DeviceIoWrapper::getInstance()->setDirection(wake_dir);
+        //DeviceIoWrapper::getInstance()->setDirection(wake_dir);
         DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
         if (m_dcsSdk) {
-            printf("\n============= m_dcsSdk notifyOfWakeWord==========\n");
+        //    printf("\n============= m_dcsSdk notifyOfWakeWord===wake_dir:%d=======\n", wake_dir);
             m_dcsSdk->notifyOfWakeWord(beginIndex, endIndex, keyword);
         }
     } else {

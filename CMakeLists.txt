@@ -16,6 +16,27 @@ link_directories(
     third/lib)
 
 add_definitions(-DLinux)
+add_definitions(-D${Platform})
+
+if(KITTAI_KEY_WORD_DETECTOR)
+    add_definitions("-DKITTAI_KEY_WORD_DETECTOR")
+endif()
+
+if(BUILD_TTS_SDK)
+    add_definitions("-DBUILD_TTS_SDK")
+endif()
+
+if(DEBUG_FLAG)
+	add_definitions("-DDEBUG_FLAG")
+endif()
+
+if(BUILD_CRAB_SDK)
+    add_definitions(-DBuild_CrabSdk)
+endif()
+
+if(DUERLINK_V2)
+    add_definitions("-DDUERLINK_V2")
+endif()
 
 add_subdirectory("DCSApp")
 add_subdirectory("Framework")

@@ -1,11 +1,11 @@
-#if(BUILD_TTS_SDK)
+if(BUILD_TTS_SDK)
     add_definitions(-DLOCALTTS)
 if(NOT ${Platform} MATCHES Sengled)
     set(LocalSynthesizerPlayer "MediaPlayer/Impl/LocalTtsPlayerImpl.cpp")
     set(LocalTtsProxy "MediaPlayer/Proxy/LocalTtsProxy.cpp")
 endif()
     set(TTS_SDK_LIB "ASRTTSManager")
-#endif()
+endif()
 
 if(BUILD_CRAB_SDK)
    set(CRAB_SDK_LIB CrabSdk)
@@ -127,7 +127,6 @@ else()
 endif()
 
 target_link_libraries(duer_linux
-"-Wl,--start-group"
         ${DCS_SDK_LIB}
         DeviceIo
         duerLink
@@ -137,20 +136,19 @@ target_link_libraries(duer_linux
         avutil
         avformat
         swresample
-        curl
         rt
         m
         pthread
         nghttp2
         LoggerUtils
         Configuration 
-	iconv
-	bd_alsa_audio_client
-	utils_bd_ipc
         "${TTS_SDK_LIB}"
         "${CRAB_SDK_LIB}"
         "${DLNA_SDK_LIB}"
-"-Wl,--end-group"
+	iconv
+	bd_alsa_audio_client
+        utils_bd_ipc
+	curl
         )
 
 # use gperftools

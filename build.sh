@@ -45,13 +45,18 @@ compile_app() {
         -DCURL_INCLUDE_DIR=${THIRD_PATH}/include \
         -DSQLITE_LDFLAGS=${THIRD_PATH}/lib/libsqlite3.so \
         -DSQLITE_INCLUDE_DIRS=${THIRD_PATH}/include \
+        -DKITTAI_KEY_WORD_DETECTOR=${KITTAI_KEY_WORD_DETECTOR} \
+        -DBUILD_TTS_SDK=${BUILD_TTS_SDK} \
+        -DBUILD_CRAB_SDK=${BUILD_CRAB_SDK} \
         -DPORTAUDIO=ON \
         -DGSTREAMER_MEDIA_PLAYER=ON \
         -DBUILD_DOC=OFF \
         -DBUILD_TEST=OFF \
         -DBUILD_ONE_LIB=ON \
-        -DOUTPUT_FOR_THIRD=ON
-    
+        -DOUTPUT_FOR_THIRD=ON \
+        -DDEBUG_FLAG=${DEBUG_FLAG} \
+        -DDUERLINK_V2=${DUERLINK_V2}
+ 
     make -j${THREAD_COUNT}
     make install
 }

@@ -485,7 +485,7 @@ public:
     *     @brief Get SDS storage unit size, byte.
     *     @return Value of SDS storage unit size, byte.
     * \else
-    *     @brief 獲取SDS存储单元，默认2，单位字节。
+    *     @brief 获取SDS存储单元，默认2，单位字节。
     *     @return SDS存储单元，单位字节。
     * \endif
     */
@@ -497,7 +497,7 @@ public:
     * \if english
     *     @brief set debug flag.
     * \else
-    *     @brief 設置debug標識。
+    *     @brief 设置debug flag。
     * \endif
     */
     void setDebugFlag(const bool& flag) {
@@ -508,12 +508,35 @@ public:
     *     @brief Get debug flag.
     *     @return debug flag.
     * \else
-    *     @brief 獲取debug flag。
+    *     @brief 获取debug flag。
     *     @return debug flag。
     * \endif
     */
     bool getDebugFlag() {
         return m_debugFlag;
+    }
+
+    /**
+    * \if english
+    *     @brief set crab coredump file path.
+    * \else
+    *     @brief 设置crab崩溃文件路径。
+    * \endif
+    */
+    void setCrabPath(const std::string& path) {
+        m_crabPath = path;
+    }
+    /**
+    * \if english
+    *     @brief Get crab coredump file path.
+    *     @return path.
+    * \else
+    *     @brief 获取crab崩溃文件路径。
+    *     @return 文件路径
+    * \endif
+    */
+    std::string getCrabPath() {
+        return m_crabPath;
     }
 private:
     /**
@@ -660,7 +683,7 @@ private:
      * \if english
      *     @brief SDS unit size, byte.
      * \else
-     *     @brief SDS 音頻數據存儲單元，單位：字節
+     *     @brief SDS 音频数据存储单元，字节
      * \endif
      */
     size_t m_sdsUnitSize;
@@ -669,10 +692,19 @@ private:
      * \if english
      *     @brief debug mode flag， controler of log.
      * \else
-     *     @brief 調試模式標記（控制打開或全幣log）
+     *     @brief 调试模式标记（控制打开或关闭log和adb）
      * \endif
      */
     bool m_debugFlag;
+
+    /**
+     * \if english
+     *     @brief crab file path.
+     * \else
+     *     @brief crab 文件路径
+     * \endif
+     */
+    std::string m_crabPath;
 };
 
 }  // namespace sdkInterfaces

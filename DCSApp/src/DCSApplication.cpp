@@ -262,7 +262,11 @@ bool DCSApplication::initialize() {
     }
 
 #if 1
+#ifdef DUERLINK_V2    
+    DuerLinkWrapper::getInstance()->initDuerLink();
+#else
     DuerLinkWrapper::getInstance()->initDuerLink(PATH_TO_BDUSS_FILE, m_dcsSdk->getClientId());
+#endif
 
     DuerLinkWrapper::getInstance()->startNetworkRecovery();
 
@@ -277,6 +281,7 @@ bool DCSApplication::initialize() {
     m_dcsSdk->notifySystemTimeReady();
     m_dcsSdk->notifyNetworkReady(true, "testWifi");
 #endif
+
 #ifdef DUERLINK_V2
     DuerLinkWrapper::getInstance()->startDiscoverAndBound(m_dcsSdk->getClientId());
 #else

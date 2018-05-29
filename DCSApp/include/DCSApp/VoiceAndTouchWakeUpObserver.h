@@ -43,8 +43,9 @@ public:
     void onKeyWordDetected(
             std::string keyword,
             uint64_t beginIndex,
-            uint64_t endIndex,
-			int wake_dir) override;
+            uint64_t endIndex) override;
+    void onLocationDetected(
+            int location) override;
 
     void printInfo() override;
 
@@ -60,8 +61,7 @@ private:
                          sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX,
                          uint64_t endIndex =
                          sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX,
-                         std::string keyword = "",
-						 int wake_dir = -1);
+                         std::string keyword = "");
 };
 
 }  // namespace application

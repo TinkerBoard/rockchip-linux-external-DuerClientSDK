@@ -83,8 +83,10 @@ public:
     virtual void onKeyWordDetected(
         std::string keyword,
         uint64_t beginIndex,
-        uint64_t endIndex,
-        int wake_dir) {} ;
+        uint64_t endIndex) {} ;
+
+    virtual void onLocationDetected(
+            int location) {} ;
 
     virtual void printInfo() {};
 };
