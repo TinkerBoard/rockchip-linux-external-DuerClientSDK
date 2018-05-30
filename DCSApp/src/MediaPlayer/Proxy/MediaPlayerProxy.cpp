@@ -325,8 +325,7 @@ void MediaPlayerProxy::executePlaybackOnBufferUnderrun(PlayProgressInfo playProg
         m_playerObserver->onBufferUnderrun();
     }
 
-#ifdef MTK8516
-
+#if defined (MTK8516) || defined (Rk3308)
     if (DuerLinkWrapper::getInstance()->getNetworkStatus() == DUERLINK_NETWORK_FAILED) {
         SoundController::getInstance()->networkConnectFailed();
         return;

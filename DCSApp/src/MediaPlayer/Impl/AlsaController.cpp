@@ -19,7 +19,7 @@
 namespace duerOSDcsApp {
 namespace mediaPlayer {
 
-#ifdef MTK8516
+#if defined (MTK8516) || defined (Rk3308)
 #define ALSA_MAX_BUFFER_TIME 500000
 #else
 #define ALSA_MAX_BUFFER_TIME 80000

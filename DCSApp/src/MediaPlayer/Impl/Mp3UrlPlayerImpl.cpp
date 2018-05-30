@@ -80,7 +80,7 @@ Mp3UrlPlayerImpl::Mp3UrlPlayerImpl(const std::string& audio_dev) : m_formatCtx(n
     m_shouldBreakFlag(false),
     m_threadAlive(true),
     m_pcmBufPool(NULL) {
-#ifdef MTK8516
+#if defined (MTK8516) || defined (Rk3308)
     m_outChannel = 2;
 #else
     m_outChannel = 1;
