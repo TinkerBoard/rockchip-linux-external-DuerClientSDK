@@ -97,6 +97,8 @@ void VoiceAndTouchWakeUpObserver::onKeyWordDetected(std::string keyword,
 
 void VoiceAndTouchWakeUpObserver::onLocationDetected(int location) {
     printf("VoiceAndTouchWakeUpObserver onLocationDetected:%d\n", location);
+    DeviceIoWrapper::getInstance()->setDirection(location);
+    DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
 }
 
 void VoiceAndTouchWakeUpObserver::printInfo() {
@@ -123,7 +125,7 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
     if (is_voice_wakeup) {
 
         //DeviceIoWrapper::getInstance()->setDirection(wake_dir);
-        DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
+        //DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
         if (m_dcsSdk) {
         //    printf("\n============= m_dcsSdk notifyOfWakeWord===wake_dir:%d=======\n", wake_dir);
             m_dcsSdk->notifyOfWakeWord(beginIndex, endIndex, keyword);
@@ -151,13 +153,13 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
             if (is_voice_wakeup) {
                 int target_dir = DeviceIoWrapper::getInstance()->fetchWakeupDirection();
                 DeviceIoWrapper::getInstance()->setDirection(target_dir);
-                DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
+                //DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
                 if (m_dcsSdk) {
                     m_dcsSdk->notifyOfWakeWord(endIndex - 8000, endIndex, keyword);
                 }
             } else {
                 DeviceIoWrapper::getInstance()->setDirection(-1);
-                DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
+                //DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
                 if (m_dcsSdk) {
                     m_dcsSdk->notifyOfTapToTalk();
                 }
