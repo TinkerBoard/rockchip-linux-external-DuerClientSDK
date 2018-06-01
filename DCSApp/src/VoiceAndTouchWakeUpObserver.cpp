@@ -97,6 +97,7 @@ void VoiceAndTouchWakeUpObserver::onKeyWordDetected(std::string keyword,
 
 void VoiceAndTouchWakeUpObserver::onLocationDetected(int location) {
     printf("VoiceAndTouchWakeUpObserver onLocationDetected:%d\n", location);
+    DeviceIoWrapper::getInstance()->ledNetOff();
     DeviceIoWrapper::getInstance()->setDirection(location);
     DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
 }
@@ -119,7 +120,6 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
     //BDS SDK 不判断网络状态
     printf("\n============= wakeup trigger==========\n");
     SoundController::getInstance()->wakeUp();
-    DeviceIoWrapper::getInstance()->ledNetOff();
     APP_INFO("VoiceAndTouchWakeUpObserver wakeupTriggered");
 
     if (is_voice_wakeup) {
@@ -131,6 +131,7 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
             m_dcsSdk->notifyOfWakeWord(beginIndex, endIndex, keyword);
         }
     } else {
+        DeviceIoWrapper::getInstance()->ledNetOff();
         DeviceIoWrapper::getInstance()->setDirection(-1);
         DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
         /*if (m_dcsSdk) {
