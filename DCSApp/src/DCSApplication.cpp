@@ -261,7 +261,7 @@ bool DCSApplication::initialize() {
         DeviceIoWrapper::getInstance()->setMute(true);
     }
 
-#if 1
+#if defined (MTK8516) || defined (Rk3308)
 #ifdef DUERLINK_V2    
     DuerLinkWrapper::getInstance()->initDuerLink();
 #else
