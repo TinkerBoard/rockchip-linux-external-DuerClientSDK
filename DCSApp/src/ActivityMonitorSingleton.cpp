@@ -104,6 +104,7 @@ void* ActivityMonitorSingleton::threadRoutine(void *arg) {
         instance->m_monitorItem.m_timestamp++;
         instance->updateJsonFile();
     }
+    return nullptr;
 }
 }  // namespace application
 }  // namespace duerOSDcsApp

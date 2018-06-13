@@ -188,22 +188,29 @@ bool tmp_wpa_conf(const string ssid, const string pwd, const string path) {
 bool start_wpa_supplicant() {
 
     deviceCommonLib::deviceTools::printTickCount("network_config connect_ap begin.");
-
-    system_command("ifconfig wlan0 0.0.0.0");
-    system_command("killall dhcpcd");
-    system_command("killall wpa_supplicant");
-    sleep(1);
-    system_command("wpa_supplicant -Dnl80211 -B -i wlan0 -c /data/cfg/wpa_supplicant.conf");
-    system_command("dhcpcd -k wlan0");//udhcpc -b -i wlan0 -q ");
-    sleep(1);
-    system_command("dhcpcd wlan0 &");
+    system_command("killall wpa_supplicant; dhcpcd -k wlan0; killall dhcpcd;"
+                   "ifconfig wlan0 0.0.0.0");
+    bool ret = system_command("wpa_supplicant -Dnl80211 -B -i wlan0 "
+                              "-c /data/cfg/wpa_supplicant.conf");
+    if (!ret) {
+        APP_ERROR("start wpa_supplicant failed\n");
+        deviceCommonLib::deviceTools::printTickCount("network_config connect_ap end.");
+        return ret;
+    }
+    ret = system_command("dhcpcd wlan0 &");
+    if (!ret) {
+        APP_ERROR("udhcpc failed\n");
+        deviceCommonLib::deviceTools::printTickCount("network_config connect_ap end.");
+        return ret;
+    }
     deviceCommonLib::deviceTools::printTickCount("network_config connect_ap end.");
 
     return true;
 }
 
 bool stop_wpa_supplicant() {
-    return system_command("killall wpa_supplicant &");
+    return system_command("killall wpa_supplicant; dhcpcd -k wlan0;"
+                          "killall dhcpcd; ifconfig wlan0 0.0.0.0");
 }
 
 bool set_ap_tmp_ipaddr() {
@@ -379,10 +386,11 @@ void set_softAp_ssid_and_pwd(string hostapd_config_file_path) {
 
 bool softap_prepare_env_cb() {
     bool ret_value = true;
-    system("softapDemo DuerOS_4444");
-    return ret_value;
-    APP_INFO("prepare softAp environment resource.");
 
+    APP_INFO("prepare softAp environment resource.");
+#ifdef Rk3308
+    system("softapDemo DuerOS_4444");
+#else
     set_softAp_ssid_and_pwd(DUERLINK_WPA_HOSTAPD_CONFIG_FILE_PATH_MTK);
 
     //stop wpa supplicant.
@@ -426,7 +434,7 @@ bool softap_prepare_env_cb() {
         APP_ERROR("start dhcp server failed.");
         ret_value = false;
     }
-
+#endif
     APP_INFO("End prepare softAp environment resource.");
 
     return ret_value;
@@ -436,9 +444,9 @@ bool softap_destroy_env_cb() {
     bool ret_value = true;
 
     APP_INFO("destroy softAp environment resource.");
-
+#ifdef Rk3308
     system("softapDemo stop");
-    return ret_value;
+#else
     if (!stop_dhcp_server()) {
         APP_ERROR("stop dhcp server failed.");
         ret_value = false;
@@ -467,7 +475,7 @@ bool softap_destroy_env_cb() {
 //        APP_ERROR("up wlan0 interface failed.");
 //        ret_value = false;
 //    }
-
+#endif
     APP_INFO("End destroy softAp environment resource.");
 
     return ret_value;
@@ -761,6 +769,7 @@ void DuerLinkMtkInstance::start_network_recovery() {
         start_network_config_timeout_alarm(DUERLINK_AUTO_CONFIG_TIMEOUT);
         duerLinkSdk::get_instance()->start_network_config();
     } else {
+        start_wpa_supplicant();
         check_recovery_network_status();
     }
 #endif
@@ -774,7 +783,7 @@ void DuerLinkMtkInstance::start_discover_and_bound() {
     duerLinkSdk::get_instance()->start_device_discover_and_bound();
 }
 
-#ifdef DUERLINK_V2    
+#ifdef DUERLINK_V2
 void DuerLinkMtkInstance::init_config_network_parameter(platform_type speaker_type,
                                                         auto_config_network_type autoType,
                                                         string devicedID,
@@ -795,7 +804,7 @@ void DuerLinkMtkInstance::init_discovery_parameter(string devicedID,
 
 }
 #else
-    
+
 void DuerLinkMtkInstance::init_config_network_parameter(platform_type speaker_type,
                                                         auto_config_network_type autoType,
                                                         const std::string& devicedID,
@@ -962,7 +971,7 @@ void DuerLinkMtkInstance::set_network_observer(NetWorkPingStatusObserver *observ
         m_pObserver = observer;
     }
 }
-    
+
 unsigned short DuerLinkMtkInstance::getChksum(unsigned short *addr,int len) {
     int nleft = len;
     int sum = 0;

@@ -597,7 +597,7 @@ void *event_read_thread(void * arg)
 {
     int key_fds[10],vol_fd,max_fd;
     int rd, ret;
-    unsigned int i, j, k;
+    int i, j, k;
     fd_set rdfs;
     struct input_event ev[64];
     struct timeval sel_timeout_tv;
@@ -722,7 +722,7 @@ void *event_read_thread(void * arg)
                 }
 
                 pthread_mutex_lock(&ev_mutex);
-                for (i = 0; i < rd / sizeof(struct input_event); i++) {
+                for (i = 0; i < rd / (int)sizeof(struct input_event); i++) {
                     int type, code;
 
                     type = ev[i].type;
@@ -774,7 +774,7 @@ void *event_read_thread(void * arg)
                 }
 
                 pthread_mutex_lock(&ev_mutex);
-                for (i = 0; i < rd / sizeof(struct input_event); i++) {
+                for (i = 0; i < rd / (int)sizeof(struct input_event); i++) {
                     unsigned int type, code;
 
                     type = ev[i].type;

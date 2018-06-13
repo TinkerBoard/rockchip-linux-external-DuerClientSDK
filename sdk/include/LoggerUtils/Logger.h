@@ -245,7 +245,7 @@ Logger& getDcsSdkLoggerLogger();
             loggerInstance.log(level, entry, __LOG_FILENAME__, __LINE__, __FUNCTION__,room);     \
         }                                                                                        \
     } while (false)
-        
+
 #define LOGGER_ENABLE(enable) deviceCommonLib::logger::getDcsSdkLoggerLogger().setEnable(enable)
 
 #ifdef LOGGER_DEBUG_LOG_ENABLED
@@ -464,16 +464,36 @@ Logger& getDcsSdkLoggerLogger();
  */
 #define LOGGER_CRITICAL(entry) LOGGER_LOG(deviceCommonLib::logger::Level::CRITICAL, entry)
 
+#ifdef DEBUG
+#include <time.h>
+
+inline unsigned long GetTickCount()
+{
+     struct timespec ts;
+
+     clock_gettime(CLOCK_MONOTONIC, &ts);
+
+     return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
+
+inline void PRINT_LOG_WITH_TICK(char *logBuffer) {
+    printf("<%lu ms> %s\n", GetTickCount(), logBuffer);
+}
+#else
+inline void PRINT_LOG_WITH_TICK(char *logBuffer) {}
+#endif
+
 #define _2K   2048
 extern char logBuffer[_2K];
 extern std::mutex g_logBufferMutex;
 #define FORMAT_LOG(room,level,formate, ...)                               \
     do {                                                                  \
-            std::lock_guard<std::mutex> lock(g_logBufferMutex);            \
+            std::lock_guard<std::mutex> lock(g_logBufferMutex);           \
             memset(logBuffer, 0, sizeof(logBuffer));                      \
             snprintf(logBuffer, sizeof(logBuffer),formate,##__VA_ARGS__); \
             ROOM_LOG(room,level, LX(logBuffer));                          \
-        } while(0)
+        } while(0); \
+        PRINT_LOG_WITH_TICK(logBuffer)
 
 /**
  * Send APP log line.
