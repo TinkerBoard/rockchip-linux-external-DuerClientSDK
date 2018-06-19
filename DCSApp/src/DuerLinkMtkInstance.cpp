@@ -388,8 +388,16 @@ bool softap_prepare_env_cb() {
     bool ret_value = true;
 
     APP_INFO("prepare softAp environment resource.");
+
 #ifdef Rk3308
-    system("softapDemo DuerOS_4444");
+    string cmd;
+    string mac_address;
+
+    cmd.append("softapDemo ");
+    cmd += Configuration::getInstance()->getSsidPrefix();
+    get_device_interface_mac(mac_address);
+    cmd += mac_address;
+    system(cmd.c_str());
 #else
     set_softAp_ssid_and_pwd(DUERLINK_WPA_HOSTAPD_CONFIG_FILE_PATH_MTK);
 
