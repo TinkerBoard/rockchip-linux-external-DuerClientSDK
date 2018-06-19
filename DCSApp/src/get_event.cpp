@@ -366,7 +366,7 @@ static int find_event_dev(int event_type)
 
     for (i = 0; i < ndev; i++)
     {
-        int j;
+        int j = -1;
         int events_nums = sizeof(support_event)/sizeof(struct alexa_support_event_type);
         snprintf(fname, sizeof(fname),
                 "%s/%s", DEV_INPUT_EVENT, namelist[i]->d_name);
@@ -424,7 +424,7 @@ static int find_multi_event_dev(int event_type, int *fds)
 
     for (i = 0; i < ndev; i++)
     {
-        int j;
+        int j = -1;
         int events_nums = sizeof(support_event)/sizeof(struct alexa_support_event_type);
         snprintf(fname, sizeof(fname),
                 "%s/%s", DEV_INPUT_EVENT, namelist[i]->d_name);

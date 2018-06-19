@@ -199,7 +199,7 @@ bool start_wpa_supplicant() {
     }
     ret = system_command("dhcpcd wlan0 &");
     if (!ret) {
-        APP_ERROR("udhcpc failed\n");
+        APP_ERROR("dhcpcd failed\n");
         deviceCommonLib::deviceTools::printTickCount("network_config connect_ap end.");
         return ret;
     }
