@@ -262,14 +262,14 @@ bool DCSApplication::initialize() {
     }
 
 #if defined (MTK8516) || defined (Rk3308)
-#ifdef DUERLINK_V2    
+#ifdef DUERLINK_V2
     DuerLinkWrapper::getInstance()->initDuerLink();
 #else
     DuerLinkWrapper::getInstance()->initDuerLink(PATH_TO_BDUSS_FILE, m_dcsSdk->getClientId());
 #endif
 
     DuerLinkWrapper::getInstance()->startNetworkRecovery();
-
+#if 0
     std::chrono::seconds secondsToWait{1};
     if (!m_detectNTPTimer.start(
             secondsToWait, deviceCommonLib::deviceTools::Timer::PeriodType::ABSOLUTE,
@@ -277,6 +277,7 @@ bool DCSApplication::initialize() {
             std::bind(&DCSApplication::detectNTPReady, this))) {
         APP_ERROR("Failed to start m_checkNtpTimer");
     }
+#endif
 #else
     m_dcsSdk->notifySystemTimeReady();
     m_dcsSdk->notifyNetworkReady(true, "testWifi");
@@ -288,9 +289,9 @@ bool DCSApplication::initialize() {
     DuerLinkWrapper::getInstance()->startDiscoverAndBound(m_dcsSdk->getClientId(), PATH_TO_BDUSS_FILE);
 #endif
 #ifdef DUEROS_DLNA
-    std::shared_ptr<dueros_dlna::IOutput> sp = std::make_shared<dueros_dlna::OutputFfmpeg>();    
-    dueros_dlna::DlnaDmrSdk dlnaDmrSdk;	 
-    dlnaDmrSdk.add_output_module(sp);	  
+    std::shared_ptr<dueros_dlna::IOutput> sp = std::make_shared<dueros_dlna::OutputFfmpeg>();
+    dueros_dlna::DlnaDmrSdk dlnaDmrSdk;
+    dlnaDmrSdk.add_output_module(sp);
     dlnaDmrSdk.start();
 #endif
     m_systemUpdateRevWrapper = SystemUpdateRevWrapper::create();
@@ -309,6 +310,10 @@ void DCSApplication::detectNTPReady() {
 void DCSApplication::networkReady() {
     if (m_dcsSdk) {
         m_dcsSdk->notifyNetworkReady(DuerLinkWrapper::getInstance()->isFromConfigNetwork(), DeviceIoWrapper::getInstance()->getWifiBssid());
+#if defined (Rk3308)
+        m_dcsSdk->notifySystemTimeReady();
+        ActivityMonitorSingleton::getInstance()->updatePlayerStatus(PLAYER_STATUS_OFF);
+#endif
     }
 
 #ifdef Build_CrabSdk
