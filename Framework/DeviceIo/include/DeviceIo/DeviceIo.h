@@ -293,12 +293,17 @@ public:
 
     void rmOtaFile();
 
+    void OnNetworkReady();
+
 private:
     static DeviceIo* m_instance;
     static DeviceInNotify* m_notify;
 
     static pthread_once_t m_initOnce;
     static pthread_once_t m_destroyOnce;
+
+    char wpa_status[1024];
+    size_t wpa_status_len;
 
     DeviceIo();
     ~DeviceIo();

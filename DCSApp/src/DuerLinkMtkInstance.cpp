@@ -185,6 +185,10 @@ bool tmp_wpa_conf(const string ssid, const string pwd, const string path) {
     return true;
 }
 
+void DuerLinkMtkInstance::OnNetworkReady() {
+    system_command("ntpdate cn.pool.ntp.org; /etc/init.d/S49ntp restart");
+}
+
 bool start_wpa_supplicant() {
 
     deviceCommonLib::deviceTools::printTickCount("network_config connect_ap begin.");

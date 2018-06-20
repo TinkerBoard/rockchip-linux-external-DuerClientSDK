@@ -251,6 +251,8 @@ public:
 
     bool isPauseBtnClicked() const;
 
+    void OnNetworkReady();
+
 private:
     DeviceIoWrapper();
 

@@ -35,12 +35,12 @@ using duerOSDcsApp::framework::BtControl;
 static const int MAX_USER_VOLUME = 100;
 static const int MIN_USER_VOLUME = 0;
 
-static const int MUSIC_PLAYBACK_TRACK_ID =  0x0001 << 0; //track:0 1<<0
-static const int INFO_PLAYBACK_TRACK_ID =  0x0001 << 1;
-static const int TTS_PLAYBACK_TRACK_ID =  0x0001 << 2;
-static const int ALERT_PLAYBACK_TRACK_ID =  0x0001 << 3;
-static const int RAPID_PLAYBACK_TRACK_ID =  0x0001 << 7;
-static const int NATTS_PLAYBACK_TRACK_ID =  0x0001 << 8;
+static const int MUSIC_PLAYBACK_TRACK_ID = 0x0001 << 0; //track:0 1<<0
+static const int INFO_PLAYBACK_TRACK_ID = 0x0001 << 1;
+static const int TTS_PLAYBACK_TRACK_ID = 0x0001 << 2;
+static const int ALERT_PLAYBACK_TRACK_ID = 0x0001 << 3;
+static const int RAPID_PLAYBACK_TRACK_ID = 0x0001 << 7;
+static const int NATTS_PLAYBACK_TRACK_ID = 0x0001 << 8;
 
 DeviceIoWrapper *DeviceIoWrapper::s_deviceIoWrapper = NULL;
 pthread_once_t  DeviceIoWrapper::s_initOnce = PTHREAD_ONCE_INIT;
@@ -277,9 +277,9 @@ void DeviceIoWrapper::callback(DeviceInput event, void *data, int len) {
         }
         case DeviceInput::KEY_IS_SLEEP_STATE:{
             if (isSleepMode()) {
-                *(int*)data = 1;                
+                *(int*)data = 1;
             } else {
-                *(int*)data = 0;                
+                *(int*)data = 0;
             }
             break;
         }
@@ -744,38 +744,48 @@ void DeviceIoWrapper::wakeupVolumeUp() {
 
 std::string DeviceIoWrapper::getBtMac() {
     char bt_mac[18] = {0};
-    DeviceIo::getInstance()->controlBt(BtControl::GET_BT_MAC, bt_mac);
+    DeviceIo::getInstance()->controlBt(BtControl::GET_BT_MAC, bt_mac,
+                                       sizeof(bt_mac));
     return std::string(bt_mac);
 }
 
 std::string DeviceIoWrapper::getWifiMac() {
     char wifi_mac[18] = {0};
-    DeviceIo::getInstance()->controlBt(BtControl::GET_WIFI_MAC, wifi_mac);
+    DeviceIo::getInstance()->controlBt(BtControl::GET_WIFI_MAC, wifi_mac,
+                                       sizeof(wifi_mac));
     return std::string(wifi_mac);
 }
 
 std::string DeviceIoWrapper::getWifiIp() {
     char wifi_ip[40] = {0};
-    DeviceIo::getInstance()->controlBt(BtControl::GET_WIFI_IP, wifi_ip);
+    DeviceIo::getInstance()->controlBt(BtControl::GET_WIFI_IP, wifi_ip,
+                                       sizeof(wifi_ip));
     return std::string(wifi_ip);
 }
 
 std::string DeviceIoWrapper::getWifiSsid() {
     char wifi_ssid[128] = {0};
-    DeviceIo::getInstance()->controlBt(BtControl::GET_WIFI_SSID, wifi_ssid);
+    DeviceIo::getInstance()->controlBt(BtControl::GET_WIFI_SSID, wifi_ssid,
+                                       sizeof(wifi_ssid));
     return std::string(wifi_ssid);
 }
 
 std::string DeviceIoWrapper::getWifiBssid() {
     char wifi_bssid[128] = {0};
-    DeviceIo::getInstance()->controlBt(BtControl::GET_WIFI_BSSID, wifi_bssid);
+    DeviceIo::getInstance()->controlBt(BtControl::GET_WIFI_BSSID, wifi_bssid,
+                                       sizeof(wifi_bssid));
     return std::string(wifi_bssid);
 }
 
 std::string DeviceIoWrapper::getlocalName() {
     char local_name[128] = {0};
-    DeviceIo::getInstance()->controlBt(BtControl::GET_LOCAL_NAME, local_name);
+    DeviceIo::getInstance()->controlBt(BtControl::GET_LOCAL_NAME, local_name,
+                                       sizeof(local_name));
     return std::string(local_name);
+}
+
+void DeviceIoWrapper::OnNetworkReady() {
+    DeviceIo::getInstance()->OnNetworkReady();
 }
 
 bool DeviceIoWrapper::isRecognizing() const {

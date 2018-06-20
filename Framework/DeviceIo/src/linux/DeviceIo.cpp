@@ -19,6 +19,8 @@
 #include <LoggerUtils/DcsSdkLogger.h>
 #include "alsa/asoundlib.h"
 
+#include <wpa_ctrl.h>
+
 namespace duerOSDcsApp {
 namespace framework {
 
@@ -319,6 +321,8 @@ DeviceIo::DeviceIo() {
 
     m_destroyOnce = PTHREAD_ONCE_INIT;
 
+    wpa_status[0] = 0;
+    wpa_status_len = 0;
 }
 
 DeviceIo::~DeviceIo() {
@@ -369,7 +373,7 @@ int DeviceIo::controlLed(LedState cmd, void *data, int len) {
     switch(cmd) {
         case LedState::LED_NET_RECOVERY:
             g_infoled->led_open(MODE_SENSORY_STARTED,0);
-            break; 
+            break;
         case LedState::LED_NET_WAIT_CONNECT:
             APP_ERROR("controlLed:%d\n",cmd);
             g_infoled->led_open(MODE_WIFI_CONNECT,0);
@@ -436,7 +440,7 @@ int DeviceIo::controlLed(LedState cmd, void *data, int len) {
             break;
 
         case LedState::LED_VOLUME:
-            g_infoled->led_open(MODE_VOLUME,*(int*)data / 10); 
+            g_infoled->led_open(MODE_VOLUME,*(int*)data / 10);
             break;
         case LedState::LED_MUTE:
             g_infoled->led_open(MODE_MIC_MUTE,0);
@@ -467,8 +471,44 @@ int DeviceIo::controlLed(LedState cmd, void *data, int len) {
     return 0;
 }
 
+static int GetStatusValue(const char *key, char *src, int src_len,char *dst,
+                          int dst_size) {
+    char *result = nullptr;
+    if (src_len <= 0 || dst_size < 1)
+        return -1;
+    result = strstr(src, key);
+    if (!result)
+        return -1;
+    result += strlen(key);
+    char ch = *result;
+    int len = 0;
+    dst_size -= 1;
+    while (ch && ch != '\n' && len < dst_size) {
+        *dst++ = ch;
+        len++;
+        ch = *(++result);
+    }
+    *dst = 0;
+    APP_DEBUG("%s%s", key, dst - len);
+    return len;
+}
+
 int DeviceIo::controlBt(BtControl cmd, void *data, int len) {
-    return 0;
+    using BtControl_rep_type = std::underlying_type<BtControl>::type;
+
+    int ret = 0;
+    switch (cmd) {
+    case BtControl::GET_WIFI_BSSID:
+        if (GetStatusValue("bssid=", wpa_status, wpa_status_len, (char*)data,
+                           len) <= 0)
+            ret = -1;
+        break;
+    default:
+        APP_DEBUG("%s, cmd <%d> is not implemented.\n", __func__,
+                  static_cast<BtControl_rep_type>(cmd));
+    }
+
+    return ret;
 }
 
 int DeviceIo::transmitInfrared(std::string& infraredCode) {
@@ -574,6 +614,31 @@ bool DeviceIo::inOtaMode() {
 
 void DeviceIo::rmOtaFile() {
 
+}
+
+static void wpa_cli_msg_cb(char *msg, size_t len) {
+    APP_INFO("wpa cli msg(%lu) : %s\n", len, msg);
+}
+
+void DeviceIo::OnNetworkReady() {
+    // Rk3308 use the wpa_supplicant help network connection.
+    struct wpa_ctrl *ctrl_interface =
+        wpa_ctrl_open("/var/run/wpa_supplicant/wlan0");
+    if (!ctrl_interface) {
+         APP_ERROR("open wpa ctrl failed\n");
+         return;
+    }
+
+    static const char* cmd = "STATUS";
+    size_t reply_len = sizeof(wpa_status) - 1;
+    int ret = wpa_ctrl_request(ctrl_interface, cmd, sizeof(cmd) - 1,
+                               wpa_status, &reply_len, wpa_cli_msg_cb);
+    if (ret) {
+        APP_ERROR("wpa ctrl status failed, ret = %d\n", ret);
+    } else {
+        wpa_status_len = reply_len;
+    }
+    wpa_ctrl_close(ctrl_interface);
 }
 
 } // namespace framework

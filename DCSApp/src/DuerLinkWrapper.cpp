@@ -82,7 +82,7 @@ void DuerLinkWrapper::logFunction(const char* msg, ...) {
     LINK_INFO(msg_buff);
 }
 
-#ifdef DUERLINK_V2    
+#ifdef DUERLINK_V2
 void DuerLinkWrapper::initDuerLink() {
 
     DuerLinkMtkInstance::get_instance()->init_config_network_parameter(duerLink::platform_type::EHodor,
@@ -366,7 +366,7 @@ void DuerLinkWrapper::networkLinkFailed() {
         framework::DeviceIo::getInstance()->rmOtaFile();
     }
 }
-#ifdef DUERLINK_V2    
+#ifdef DUERLINK_V2
 void DuerLinkWrapper::startDiscoverAndBound(const string& client_id) {
     DuerLinkMtkInstance::get_instance()->init_discovery_parameter(DeviceIoWrapper::getInstance()->getDeviceId()
                                                                          , client_id, "wlan0");
@@ -467,6 +467,10 @@ bool DuerLinkWrapper::isFromConfigNetwork() const {
 
 void DuerLinkWrapper::setFromConfigNetwork(bool isFromConfigNetwork) {
     DuerLinkWrapper::m_isFromConfigNetwork = isFromConfigNetwork;
+}
+
+void DuerLinkWrapper::OnNetworkReady() {
+    DuerLinkMtkInstance::get_instance()->OnNetworkReady();
 }
 
 }  // namespace application

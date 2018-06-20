@@ -309,7 +309,13 @@ void DCSApplication::detectNTPReady() {
 
 void DCSApplication::networkReady() {
     if (m_dcsSdk) {
-        m_dcsSdk->notifyNetworkReady(DuerLinkWrapper::getInstance()->isFromConfigNetwork(), DeviceIoWrapper::getInstance()->getWifiBssid());
+        DuerLinkWrapper::getInstance()->OnNetworkReady();
+        DeviceIoWrapper::getInstance()->OnNetworkReady();
+        APP_INFO("networkReady isFromConfigNetwork(): %d\n",
+                 DuerLinkWrapper::getInstance()->isFromConfigNetwork());
+        m_dcsSdk->notifyNetworkReady(
+            DuerLinkWrapper::getInstance()->isFromConfigNetwork(),
+            DeviceIoWrapper::getInstance()->getWifiBssid());
 #if defined (Rk3308)
         m_dcsSdk->notifySystemTimeReady();
         ActivityMonitorSingleton::getInstance()->updatePlayerStatus(PLAYER_STATUS_OFF);

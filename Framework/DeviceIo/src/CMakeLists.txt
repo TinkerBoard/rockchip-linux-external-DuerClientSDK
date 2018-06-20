@@ -253,7 +253,7 @@ else()
     add_library(DeviceIo SHARED
                 linux/InfoLed.cpp
                 linux/DeviceIo.cpp)
-
+    target_link_libraries(DeviceIo wpa_client)
 endif()
 
 target_include_directories(DeviceIo PUBLIC

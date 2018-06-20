@@ -104,9 +104,9 @@ public:
     static DuerLinkMtkInstance* get_instance();
 
     static void destroy();
-	
+
     void init_duer_link_log(duerLink::duer_link_log_cb_t duer_link_log);
-	
+
 #ifdef DUERLINK_V2
     void init_config_network_parameter(duerLink::platform_type speaker_type,
                                        duerLink::auto_config_network_type autoType,
@@ -122,7 +122,7 @@ public:
                                        const std::string& interface,
                                        const std::string& bdussfile,
                                        const std::string& clientId);
-									   
+
     void init_discovery_parameter(const std::string& devicedID,
                                   const std::string& appId,
                                   const std::string& interface,
@@ -180,6 +180,8 @@ public:
 
     inline operation_type get_operation_type() {return m_operation_type;};
     inline void set_operation_type(operation_type type) {m_operation_type = type;};
+
+    void OnNetworkReady();
 
 private:
     DuerLinkMtkInstance();

@@ -145,6 +145,8 @@ public:
 
     static void logFunction(const char* msg, ...);
 
+    void OnNetworkReady();
+
 private:
     DuerLinkWrapper();
 
