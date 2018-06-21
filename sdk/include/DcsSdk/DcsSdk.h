@@ -91,7 +91,7 @@ public:
      *     @return DcsSdk实例指针或nullptr。
      * \endif
      */
-    static std::unique_ptr<DcsSdk> create(DcsSdkParameters parameters);
+    static std::unique_ptr<DcsSdk> create(DcsSdkParameters& parameters);
 
     /**
      * \if english
@@ -434,7 +434,7 @@ private:
      *     @return True/False：初始化成功/失败。
      * \endif
      */
-    bool initialize(DcsSdkParameters parameters);
+    bool initialize(DcsSdkParameters& parameters);
 
     /**
      * \if english

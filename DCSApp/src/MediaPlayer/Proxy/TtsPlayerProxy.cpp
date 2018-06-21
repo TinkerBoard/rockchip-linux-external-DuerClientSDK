@@ -121,11 +121,12 @@ void TtsPlayerProxy::executeMp3Play() {
     bool first_packet_flag = false;
 
     while (true) {
+        // int size = sizeof(buffer);
         int size = 0;
 
         if (m_attachmentStream) {
             Stream::StreamStatus status = m_attachmentStream->readData(buffer, size);
-
+            APP_INFO("%s readData return size: %d\n", __func__, size);
             if (size > 0 && status == Stream::StreamStatus::BUFFER_DATA) {
                 if (!first_packet_flag) {
                     first_packet_flag = true;

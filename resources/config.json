@@ -67,7 +67,7 @@
         "speechsdk_version":"3.1.8.3e76721",
         "use_speechLink":"1",
         "oneShot_test":"0",
-	"dcs_token":"24.25cee39c0fa3735e02866db60b2e4391.2592000.1529750136.282335-10972157",
+	"dcs_token":"24.69bf17515d7dd98bf08af7d256de85ca.2592000.1532491209.282335-10972157",
         "log_file":"/data/duer/speechsdk.log",
 	"key_app_code":"9959452",
 	"dat_file_path":"./resources/esis_carlife.pkg",
