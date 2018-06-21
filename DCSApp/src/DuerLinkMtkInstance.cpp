@@ -710,9 +710,10 @@ bool DuerLinkMtkInstance::is_first_network_config(string path) {
     length = it_stream.tellg();
     it_stream.seekg(0,std::ios::beg);
 
-    char *buffer = new char[length];
+    char *buffer = new char[length + 1];
     it_stream.read(buffer, length);
     it_stream.close();
+    buffer[length] = 0;
 
     char * position = nullptr;
     position = strstr(buffer,"ssid");
