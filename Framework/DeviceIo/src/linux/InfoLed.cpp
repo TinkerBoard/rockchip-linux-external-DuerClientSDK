@@ -568,6 +568,7 @@ void InfoLed::mainloop() {
             break;
         case State::OFF:
             fprintf(stderr,"-----mode OFF-------\n");
+            m_ledState = State::OFF;
             if (m_isVolAdjust) {
                 fprintf(stderr,"-----mode OFF while adjust volume-------\n");
                 break;

@@ -56,6 +56,7 @@ extern "C" {
         FUNC_KEY_WIFI_MODE,
         FUNC_KEY_VOL_DOWN,
         FUNC_KEY_VOL_UP,
+        FUNC_KEY_PLAY_PAUSE,
         FUNC_KEY_MIC_MUTE,
         FUNC_KEY_BT_MODE,
         FUNC_KEY_NORMAL_MODE,

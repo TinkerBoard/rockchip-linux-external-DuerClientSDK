@@ -99,6 +99,7 @@ static int volume_step_up();
 static int volume_step_down();
 static int mute_mic();
 static int enter_wifi_mode();
+static int enter_play_pause();
 static int enter_bt_mode();
 static int enter_wifi_bt_mode_with_onekey();
 static int find_event_dev(int event_type);
@@ -114,12 +115,17 @@ struct alexa_key support_keys [FUNC_LAST_ID] ={
 };
 #else
 struct alexa_key support_keys [] = {
-    {KEY_PLAY/*WAKEUP*/, 0, 1,  enter_wakeup_mode,},
-    {KEY_PLAY/*WIFI_MODE*/, 1, 1, enter_wifi_mode},
+    /*modified by cherry.chen*/
+    {KEY_MODE/*WAKEUP*/, 0, 1,  enter_wakeup_mode,},
+    {KEY_MODE/*WIFI_MODE*/, 1, 1, enter_wifi_mode},
+    {KEY_PLAY/*PLAY/PAUSE*/, 0, 1, enter_play_pause},
+    {KEY_PLAY/*BT_MODE*/, 1, 1, enter_bt_mode},
+    //{KEY_PLAY/*WAKEUP*/, 0, 1,  enter_wakeup_mode,},
+    //{KEY_PLAY/*WIFI_MODE*/, 1, 1, enter_wifi_mode},
     {KEY_VOLUMEDOWN/*VOL_DOWN*/, 0, 1, volume_step_down},
     {KEY_VOLUMEUP/*VOL_UP*/, 0, 1, volume_step_up},
-    {KEY_MICMUTE/*MIC_MUTE*/, 0, 1,  mute_mic},
-    {KEY_MICMUTE/*BT_MODE*/, 1, 1, enter_bt_mode},
+    // {KEY_MICMUTE/*MIC_MUTE*/, 0, 1,  mute_mic},
+    // {KEY_MICMUTE/*BT_MODE*/, 1, 1, enter_bt_mode},
     /*next just for evb debug*/
     {KEY_MENU/*WAKEUP*/, 0, 1,  enter_wakeup_mode,},
     {KEY_MENU/*WIFI_MODE*/, 1, 1, enter_wifi_mode},
@@ -151,6 +157,11 @@ static int volume_step_down()
     //is_volume_changed = 1;
     printf("FUNC_KEY_VOL_DOWN is pressed, step is %d, alexa vol is %d\n",current_vol_step, volume_controls[current_vol_step].alex_vol);
     return FUNC_KEY_VOL_DOWN;
+}
+
+static int enter_play_pause()
+{
+    return FUNC_KEY_PLAY_PAUSE;
 }
 
 static int mic_mode = FUNC_KEY_MIC_UNMUTE;

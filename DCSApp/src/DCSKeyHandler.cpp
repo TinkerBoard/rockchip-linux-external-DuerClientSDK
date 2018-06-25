@@ -72,6 +72,11 @@ void DCSKeyHandler::keyEventLoop()
           m_devIoWrapper->callback(DeviceInput::KEY_VOLUME_DOWN, &volume_step, 0);
         }
         break;
+      case FUNC_KEY_PLAY_PAUSE:
+       {
+            m_devIoWrapper->callback(DeviceInput::KEY_PLAY_PAUSE, NULL, 0);
+       }
+       break;
       case FUNC_KEY_MIC_MUTE:
         {
             printf("FUNC_KEY_MIC_MUTE\n");
