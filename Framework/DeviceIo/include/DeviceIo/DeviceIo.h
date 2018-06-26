@@ -23,6 +23,8 @@
 namespace duerOSDcsApp {
 namespace framework {
 
+#define PLAYBACK_DEVICE_NUM 1
+
 /* led control cmd */
 enum class LedState {
     LED_NET_RECOVERY = 0,

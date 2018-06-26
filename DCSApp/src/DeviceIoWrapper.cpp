@@ -471,8 +471,9 @@ int DeviceIoWrapper::getCurrentVolume() const {
 }
 
 void DeviceIoWrapper::setCurrentVolume(int current_volume) {
-    current_volume = current_volume < MIN_USER_VOLUME ? MIN_USER_VOLUME : current_volume;
-    current_volume = current_volume > MAX_USER_VOLUME ? MAX_USER_VOLUME : current_volume;
+    current_volume = std::max(current_volume, MIN_USER_VOLUME);
+    current_volume = std::min(current_volume, MAX_USER_VOLUME);
+    APP_INFO("%s, current_volume: %d\n", __func__, current_volume);
     DeviceIo::getInstance()->setVolume(current_volume,
 						(MUSIC_PLAYBACK_TRACK_ID |
 						INFO_PLAYBACK_TRACK_ID |
@@ -488,12 +489,17 @@ int DeviceIoWrapper::getAlertVolume() const {
 }
 
 void DeviceIoWrapper::setAlertVolume(int volume) {
+#if PLAYBACK_DEVICE_NUM <= 1
+    APP_INFO("%s, volume: %d; Not Implemented\n", __func__, volume);
+#else
     DeviceIo::getInstance()->setVolume(volume, ALERT_PLAYBACK_TRACK_ID);
     ledVolume();
     volumeChanged();
+#endif
 }
 
 void DeviceIoWrapper::initCommonVolume(int volume) {
+    APP_INFO("%s, volume: %d\n", __func__, volume);
     DeviceIo::getInstance()->setVolume(volume,
 						(MUSIC_PLAYBACK_TRACK_ID |
 						INFO_PLAYBACK_TRACK_ID |
@@ -504,8 +510,12 @@ void DeviceIoWrapper::initCommonVolume(int volume) {
 }
 
 void DeviceIoWrapper::initAlertVolume(int volume) {
+#if PLAYBACK_DEVICE_NUM <= 1
+    APP_INFO("%s, volume: %d; Not Implemented\n", __func__, volume);
+#else
     DeviceIo::getInstance()->setVolume(volume, ALERT_PLAYBACK_TRACK_ID);
     volumeChanged();
+#endif
 }
 
 bool DeviceIoWrapper::isMute() const {
@@ -649,6 +659,8 @@ void DeviceIoWrapper::volumeChanged() {
     int current_volume = getCurrentVolume();
     bool mute = isMute();
     if (m_applicationManager) {
+        APP_INFO("%s, current_volume: %d, mute: %d\n", __func__, current_volume,
+                 mute);
         m_applicationManager->volumeChanged(current_volume, mute);
     }
 }

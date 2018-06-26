@@ -464,9 +464,8 @@ Logger& getDcsSdkLoggerLogger();
  */
 #define LOGGER_CRITICAL(entry) LOGGER_LOG(deviceCommonLib::logger::Level::CRITICAL, entry)
 
-#ifdef DEBUG
-#include <time.h>
 
+#include <time.h>
 inline unsigned long GetTickCount()
 {
      struct timespec ts;
@@ -479,9 +478,6 @@ inline unsigned long GetTickCount()
 inline void PRINT_LOG_WITH_TICK(char *logBuffer) {
     printf("<%lu ms> %s\n", GetTickCount(), logBuffer);
 }
-#else
-inline void PRINT_LOG_WITH_TICK(char *logBuffer) {}
-#endif
 
 #define _2K   2048
 extern char logBuffer[_2K];

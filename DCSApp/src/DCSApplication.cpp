@@ -333,8 +333,8 @@ void DCSApplication::networkReady() {
 
 void DCSApplication::duerlinkNotifyReceivedData(const std::string& jsonPackageData, int sessionId) {
     if (!DeviceIoWrapper::getInstance()->isSleepMode()) {
-        APP_INFO("DCSApplication duerlink_notify_received_data: [%s], sessionId: [%d]",
-                 jsonPackageData.c_str(), sessionId);
+        // APP_INFO("DCSApplication duerlink_notify_received_data: [%s], sessionId: [%d]",
+        //          jsonPackageData.c_str(), sessionId);
         if (m_dcsSdk) {
             m_dcsSdk->consumeMessage(jsonPackageData);
         }

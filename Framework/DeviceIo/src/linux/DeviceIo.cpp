@@ -15,6 +15,8 @@
  */
 
 #include "DeviceIo/DeviceIo.h"
+
+#include <unistd.h>
 #include <cmath>
 #include <LoggerUtils/DcsSdkLogger.h>
 #include "alsa/asoundlib.h"
@@ -27,8 +29,8 @@ namespace framework {
 #define USER_VOL_MIN                    5   // keep some voice
 #define USER_VOL_MAX                    100
 
-#define AUDIO_MIN_VOLUME                0
-#define AUDIO_MAX_VOLUME                1000
+// #define AUDIO_MIN_VOLUME                0
+// #define AUDIO_MAX_VOLUME                100
 
 #define SOFTVOL /*should play a music before ctl the softvol*/
 #define SOFTVOL_CARD "default"
@@ -39,8 +41,8 @@ typedef struct {
     bool    is_mute;
 } user_volume_t;
 
-static snd_mixer_t*      mixer_fd   = nullptr;
-static snd_mixer_elem_t* mixer_elem = nullptr;
+// static snd_mixer_t*      mixer_fd   = nullptr;
+// static snd_mixer_elem_t* mixer_elem = nullptr;
 static user_volume_t    user_volume = {0, false};
 static pthread_mutex_t  user_volume_mutex;
 
@@ -98,12 +100,16 @@ static int cset(char *value_string, int roflag)
             return  err;
         }
         if ((err = snd_ctl_elem_write(handle, control)) < 0) {
-            APP_ERROR("Control %s element write error: %d\n", card, err);
+            APP_ERROR("Control %s element write error: %d; errno: %d\n", card,
+                      err, errno);
             if (!keep_handle) {
                 snd_ctl_close(handle);
                 handle = NULL;
             }
             return err;
+        } else {
+            APP_INFO("Control %s element write volume %s successfully\n", card,
+                     value_string);
         }
     } else {
         int vol_l, vol_r;
@@ -132,14 +138,20 @@ static int cset(char *value_string, int roflag)
 static void softvol_set(int vol) {
     char value[128] = {0};
 
-    sprintf(value, "%d", vol);
-    cset(value, 0);
+    sprintf(value, "%d%%", vol);
+    int ret = cset(value, 0);
+    // try again, often fail first time
+    while (ret) {
+       usleep(100 * 1000);
+       ret = cset(value, 0);
+    }
 }
 
 static int softvol_get() {
     return cset(NULL, 1);
 }
 
+#ifndef SOFTVOL
 static void mixer_exit() {
     if (mixer_fd != nullptr) {
         snd_mixer_close(mixer_fd);
@@ -154,6 +166,7 @@ static int mixer_init(const char* card, const char* elem) {
     APP_ERROR("mixer init\n");
     return 0;
 #endif
+
     const char* _card = card ? card : "default";
 #ifdef MTK8516
     const char* _elem = elem ? elem : "TAS5760";
@@ -236,26 +249,24 @@ static unsigned int mixer_get_volume() {
 
     return mix_vol;
 }
+#endif
 
-static void user_set_volume(double user_vol) {
-    double k, audio_vol;
-
-    APP_ERROR("%s, %lf\n", __func__, user_vol);
-
-    user_vol = (user_vol > USER_VOL_MAX) ? USER_VOL_MAX : user_vol;
-    user_vol = (user_vol < USER_VOL_MIN) ? USER_VOL_MIN : user_vol;
-
+static void user_set_volume(int user_vol) {
+    APP_ERROR("%s, %d\n", __func__, user_vol);
     /* set volume will unmute */
     if (user_volume.is_mute) {
-        user_vol = user_volume.volume;
+        if (user_vol == 0)
+            user_vol = user_volume.volume;
         user_volume.is_mute = false;
-    } else {
-        user_volume.volume = user_vol;
     }
+    user_vol = std::min(user_vol, USER_VOL_MAX);
+    user_vol = std::max(user_vol, USER_VOL_MIN);
 
 #ifdef SOFTVOL
     softvol_set(user_vol);
+    user_volume.volume = user_vol;
 #else
+    double k, audio_vol;
     k = (double)AUDIO_MAX_VOLUME / USER_VOL_MAX;
 
     audio_vol = k * user_vol;
@@ -265,15 +276,14 @@ static void user_set_volume(double user_vol) {
 }
 
 static int user_get_volume() {
-    double k, offset, audio_vol;
     int user_vol = 0;
 
 #ifdef SOFTVOL
     user_vol = softvol_get();
-
     APP_ERROR("%s: %d\n", __func__, user_vol);
     return user_vol;
 #else
+    double k, offset, audio_vol;
     audio_vol = mixer_get_volume();
 
     k = (double)(USER_VOL_MAX - USER_VOL_MIN) / (AUDIO_MAX_VOLUME - AUDIO_MIN_VOLUME);
@@ -301,6 +311,7 @@ DeviceIo::DeviceIo() {
 
     m_notify = nullptr;
 
+#ifndef SOFTVOL
     ret = mixer_init(nullptr, nullptr);
 
     if (ret) {
@@ -308,6 +319,7 @@ DeviceIo::DeviceIo() {
 
         return;
     }
+#endif
 
     ret = pthread_mutex_init(&user_volume_mutex, nullptr);
 
@@ -327,7 +339,9 @@ DeviceIo::DeviceIo() {
 
 DeviceIo::~DeviceIo() {
     pthread_mutex_destroy(&user_volume_mutex);
+#ifndef SOFTVOL
     mixer_exit();
+#endif
     m_notify = nullptr;
     m_initOnce = PTHREAD_ONCE_INIT;
 }
@@ -375,7 +389,6 @@ int DeviceIo::controlLed(LedState cmd, void *data, int len) {
             g_infoled->led_open(MODE_SENSORY_STARTED,0);
             break;
         case LedState::LED_NET_WAIT_CONNECT:
-            APP_ERROR("controlLed:%d\n",cmd);
             g_infoled->led_open(MODE_WIFI_CONNECT,0);
             break;
         case LedState::LED_NET_DO_CONNECT:

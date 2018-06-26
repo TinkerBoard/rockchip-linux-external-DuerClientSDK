@@ -196,8 +196,8 @@ bool start_wpa_supplicant() {
     deviceCommonLib::deviceTools::printTickCount("network_config connect_ap begin.");
     system_command("killall wpa_supplicant; dhcpcd -k wlan0; killall dhcpcd;"
                    "ifconfig wlan0 0.0.0.0");
-    bool ret = system_command("wpa_supplicant -Dnl80211 -B -i wlan0 "
-                              "-c /data/cfg/wpa_supplicant.conf");
+    bool ret = system_command("wpa_supplicant -Dnl80211 -i wlan0 "
+                              "-c /data/cfg/wpa_supplicant.conf &");
     if (!ret) {
         APP_ERROR("start wpa_supplicant failed\n");
         deviceCommonLib::deviceTools::printTickCount("network_config connect_ap end.");

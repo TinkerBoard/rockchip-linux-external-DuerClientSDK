@@ -393,7 +393,8 @@ void InfoLed::led_system_start_t() {
             if (tv_now.tv_sec - m_tvVolAdjust.tv_sec >= 5) { //if time is 5 seconds after set volume, then close the led
                 setState(m_ledState);//State::OFF);
                 mStateChange.notify_one();
-                fprintf(stderr,"save volume m_currentVolume:%d,line(%d)\n",m_currentVolume,__LINE__);
+                fprintf(stderr,"save led volume, m_currentVolume:%d,line(%d)\n",
+                        m_currentVolume, __LINE__);
                 //save volume
                 FILE *devInfo = fopen("/data/cfg/device_info.txt","rb+");
                 char tmpbuf[128] = {0};
@@ -406,14 +407,15 @@ void InfoLed::led_system_start_t() {
                     fflush(devInfo);
                     fsync(fileno(devInfo));
                     fclose(devInfo);
+                    system("cp /data/cfg/device_info.txt /data/cfg/device_info");
                 }
-                system("cp /data/cfg/device_info.txt /data/cfg/device_info");
                 m_isVolAdjust = false;
             }
         }
 
         if (m_needSaveVol) {
-            fprintf(stderr,"save volume m_currentVolume:%d,line(%d)\n",m_currentVolume,__LINE__);
+            fprintf(stderr,"save led volume, m_currentVolume:%d,line(%d)\n",
+                    m_currentVolume,__LINE__);
             //save volume
             FILE *devInfo = fopen("/data/cfg/device_info.txt","rb+");
             char tmpbuf[128] = {0};
@@ -426,8 +428,8 @@ void InfoLed::led_system_start_t() {
                 fflush(devInfo);
                 fsync(fileno(devInfo));
                 fclose(devInfo);
+                system("cp /data/cfg/device_info.txt /data/cfg/device_info");
             }
-            system("cp /data/cfg/device_info.txt /data/cfg/device_info");
             m_needSaveVol = false;
         }
 

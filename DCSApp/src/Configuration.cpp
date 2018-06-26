@@ -371,6 +371,7 @@ bool Configuration::readConfig() {
     }
 
     if (isRecreateDuerosConfigFile) {
+        APP_DEBUG("RecreateDuerosConfigFile.\n");
 #if (defined RaspberryPi) || (defined Hodor) || (defined Kuke) || (defined Dot) || (defined Box86)
         m_deviceId = DeviceIoWrapper::getInstance()->getDeviceId();
 #else

@@ -72,14 +72,19 @@ void DuerLinkWrapper::setCallback(IDuerLinkWrapperCallback *callback) {
 }
 
 void DuerLinkWrapper::logFunction(const char* msg, ...) {
-    va_list arg_ptr;
-    char msg_buff[30720] = { 0 };
+    static char* str = getenv("DEBUG_DUERLINK");
+    static int debug = str ? atoi(str) : 0;
 
-    va_start(arg_ptr, msg);
-    vsnprintf(msg_buff, 30720 , msg, arg_ptr);
-    va_end(arg_ptr);
+    if (debug) {
+        va_list arg_ptr;
+        char msg_buff[_2K] = { 0 };
 
-    LINK_INFO(msg_buff);
+        va_start(arg_ptr, msg);
+        vsnprintf(msg_buff, sizeof(msg_buff), msg, arg_ptr);
+        va_end(arg_ptr);
+
+        LINK_INFO(msg_buff);
+    }
 }
 
 #ifdef DUERLINK_V2
@@ -99,9 +104,9 @@ void DuerLinkWrapper::initDuerLink(const std::string& bdussFilePath, const std::
                                                                        bdussFilePath,
                                                                        clientId);
 #endif
-    if (!Configuration::getInstance()->getDebug()) {
+    //if (!Configuration::getInstance()->getDebug()) {
         DuerLinkMtkInstance::get_instance()->init_duer_link_log(logFunction);
-    }
+    //}
     DuerLinkMtkInstance::get_instance()->set_networkConfig_observer(this);
 
     DuerLinkMtkInstance::get_instance()->set_monitor_observer(this);
