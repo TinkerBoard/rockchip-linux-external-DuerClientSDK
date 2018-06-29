@@ -99,7 +99,7 @@ MediaPlayerStatus TtsPlayerProxy::setSource(const std::string& url) {
 
 MediaPlayerStatus TtsPlayerProxy::play() {
     APP_INFO("playCalled");
-
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     if (m_isFormatMp3) {
         m_executor->submit([this]() {
             executeMp3Play();
@@ -121,7 +121,6 @@ void TtsPlayerProxy::executeMp3Play() {
     bool first_packet_flag = false;
 
     while (true) {
-        // int size = sizeof(buffer);
         int size = 0;
 
         if (m_attachmentStream) {
@@ -147,7 +146,7 @@ void TtsPlayerProxy::executeMp3Play() {
     }
 
     m_mp3Impl->ttsEnd();
-
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
     if (m_attachmentStream) {
         m_attachmentStream->close();
         m_attachmentStream.reset();
@@ -184,7 +183,7 @@ void TtsPlayerProxy::executePcmPlay() {
             break;
         }
     }
-
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
     m_pcmImpl->ttsEnd();
 
     if (m_attachmentStream) {
@@ -197,7 +196,7 @@ void TtsPlayerProxy::executePcmPlay() {
 
 MediaPlayerStatus TtsPlayerProxy::stop() {
     APP_INFO("stopCalled");
-
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     if (m_isFormatMp3) {
         if (m_mp3Impl) {
             m_mp3Impl->ttsStop();
@@ -213,7 +212,7 @@ MediaPlayerStatus TtsPlayerProxy::stop() {
 
 MediaPlayerStatus TtsPlayerProxy::pause() {
     APP_INFO("pausedCalled");
-
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     if (m_isFormatMp3) {
         if (m_mp3Impl) {
             m_mp3Impl->ttsStop();

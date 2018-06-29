@@ -53,6 +53,8 @@ void UpnpDevice::upnp_append_variable(struct action_event* event,
 
     value = VariableContainer::get_instance().variablecontainer_get(service->variable_container,
             varnum, NULL);
+    dbg("%s, varnum[%d], paramname[%s]: value %d\n", __func__, varnum,
+        paramname, value);
     assert(value != NULL);   // triggers on invalid variable.
     upnp_add_response(event, paramname, value);
 

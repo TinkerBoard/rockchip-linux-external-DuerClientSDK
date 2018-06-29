@@ -60,6 +60,14 @@ public:
      */
     void run();
 
+    bool isPlayerRunning();
+
+    bool isBusy();
+    
+    static void enterSleepMode();
+
+    static void enterWakeupMode();
+
 private:
     /**
      * \if english
@@ -182,6 +190,8 @@ private:
     * \endif
     */
     std::shared_ptr<deviceCommonLib::deviceTools::DyLibrary> m_audioDyLib;
+
+	duerOSDcsSDK::sdkInterfaces::DcsSdkParameters parameters;
 
     std::unique_ptr<DCSKeyHandler> m_keyHandler;
 };

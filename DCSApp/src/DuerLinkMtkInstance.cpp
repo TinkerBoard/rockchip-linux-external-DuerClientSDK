@@ -192,7 +192,6 @@ void DuerLinkMtkInstance::OnNetworkReady() {
 }
 
 bool start_wpa_supplicant() {
-
     deviceCommonLib::deviceTools::printTickCount("network_config connect_ap begin.");
     system_command("killall wpa_supplicant; dhcpcd -k wlan0; killall dhcpcd;"
                    "ifconfig wlan0 0.0.0.0");

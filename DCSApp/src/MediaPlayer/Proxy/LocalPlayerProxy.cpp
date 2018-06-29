@@ -94,20 +94,25 @@ MediaPlayerStatus LocalPlayerProxy::setOffset(std::chrono::milliseconds offset) 
 }
 
 MediaPlayerStatus LocalPlayerProxy::play() {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     if (m_resPath.empty()) {
+        m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
         return MediaPlayerStatus::FAILURE;
     } else {
         m_impl->audioPlay(m_resPath.c_str(), 0, 15000);
+        m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
         return MediaPlayerStatus::SUCCESS;
     }
 }
 
 MediaPlayerStatus LocalPlayerProxy::stop() {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     m_impl->audioStop();
     return MediaPlayerStatus::SUCCESS;
 }
 
 MediaPlayerStatus LocalPlayerProxy::pause() {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     return MediaPlayerStatus::FAILURE;
 }
 
@@ -134,6 +139,7 @@ void LocalPlayerProxy::setLocalPlayObserver(
 }
 
 void LocalPlayerProxy::playbackStarted(int offset_ms) {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_START;
     if (m_playStartFunc) {
         m_playStartFunc(m_argPtr);
     }
@@ -157,6 +163,7 @@ void LocalPlayerProxy::playbackNearlyFinished(int offset_ms) {
 }
 
 void LocalPlayerProxy::playbackFinished(int offset_ms, AudioPlayerFinishStatus status) {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
     if (status == AUDIOPLAYER_FINISHSTATUS_END && m_playFinishFunc) {
         m_playFinishFunc();
     }

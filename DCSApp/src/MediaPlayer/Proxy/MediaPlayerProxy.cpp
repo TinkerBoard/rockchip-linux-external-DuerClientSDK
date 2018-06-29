@@ -99,22 +99,24 @@ MediaPlayerStatus MediaPlayerProxy::setOffset(std::chrono::milliseconds offset) 
 
 MediaPlayerStatus MediaPlayerProxy::play() {
     APP_INFO("playCalled");
-
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     if (m_impl) {
         APP_INFO("mp3 player");
         m_impl->audioPlay(m_resource_url,
                           m_offset_ms,
                           15000);
+        m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
         return MediaPlayerStatus::SUCCESS;
     } else {
         APP_ERROR("play null ptr.");
+        m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
         return MediaPlayerStatus::FAILURE;
     }
 }
 
 MediaPlayerStatus MediaPlayerProxy::stop() {
     APP_INFO("stopCalled");
-
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     if (m_impl) {
         m_impl->audioStop();
     }
@@ -124,7 +126,7 @@ MediaPlayerStatus MediaPlayerProxy::stop() {
 
 MediaPlayerStatus MediaPlayerProxy::pause() {
     APP_INFO("pauseCalled");
-
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     if (m_impl) {
         m_impl->audioPause();
     }
@@ -134,7 +136,7 @@ MediaPlayerStatus MediaPlayerProxy::pause() {
 
 MediaPlayerStatus MediaPlayerProxy::resume() {
     APP_INFO("resumeCalled");
-
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     if (m_impl) {
         m_impl->audioResume();
     }
@@ -183,6 +185,7 @@ MediaPlayerStatus MediaPlayerProxy::setFactor(float factor) {
 void MediaPlayerProxy::playbackStarted(int offset_ms) {
     m_offset_ms = 0L;
     APP_INFO("playback_startedCalled");
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_START;
     executePlaybackStart();
 }
 
@@ -198,15 +201,18 @@ void MediaPlayerProxy::playbackBufferefilled() {
 
 void MediaPlayerProxy::playbackStopped(int offset_ms) {
     APP_INFO("playback_stoppedCalled");
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     executePlaybackStop();
 }
 
 void MediaPlayerProxy::playbackPaused(int offset_ms) {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     APP_INFO("playback_pausedCalled");
     executePlaybackPause();
 }
 
 void MediaPlayerProxy::playbackResumed(int offset_ms) {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     APP_INFO("playback_resumeCalled");
     executePlaybackResume();
 }
@@ -217,6 +223,7 @@ void MediaPlayerProxy::playbackNearlyFinished(int offset_ms) {
 }
 
 void MediaPlayerProxy::playbackFinished(int offset_ms, AudioPlayerFinishStatus status) {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
     m_offset_ms = 0L;
     APP_INFO("playback_finishedCalled");
     executePlaybackFinish();

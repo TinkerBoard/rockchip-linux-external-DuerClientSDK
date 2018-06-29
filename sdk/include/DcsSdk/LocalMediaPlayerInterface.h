@@ -22,7 +22,7 @@
 #include <memory>
 
 #include "DcsSdk/LocalMediaPlayerObserverInterface.h"
-
+#include "DcsSdk/Stream.h"
 namespace duerOSDcsSDK {
 namespace sdkInterfaces {
 
@@ -184,6 +184,8 @@ public:
      */
     virtual void setObserver(
             std::shared_ptr<LocalMediaPlayerObserverInterface> playerObserver) = 0;
+
+    duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus m_audioPlayerStatus;
 };
 
 } // namespace sdkInterfaces

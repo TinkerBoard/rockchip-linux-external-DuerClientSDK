@@ -15,6 +15,7 @@
  */
 #if 1
 #include <signal.h>
+#include <sys/time.h>
 #include <cstdlib>
 #include <string>
 #include <execinfo.h>
@@ -24,6 +25,8 @@
 #include "DCSApp/Configuration.h"
 #include <DeviceTools/SingleApplication.h>
 #include <DeviceTools/PrintTickCount.h>
+#include "DCSApp/DuerLinkWrapper.h"
+#include "DeviceTools/DeviceUtils.h"
 
 #ifndef __SAMPLEAPP_VERSION__
 #define __SAMPLEAPP_VERSION__ "Unknown SampleApp Version"
@@ -36,6 +39,110 @@
 #ifndef __DUER_LINK_VERSION__
 #define __DUER_LINK_VERSION__ "Unknown DuerLink Version"
 #endif
+pthread_mutex_t mylock=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t mycond=PTHREAD_COND_INITIALIZER;
+const unsigned int voice_inactive_max_count = 16000 * 5; //16k, 3 seconds
+
+unsigned int read_voice_inactive_frames(void)
+{
+    FILE *fp = nullptr;
+    // char buf[100] = {0};
+    unsigned int frames = 0;
+
+    fp = fopen("/sys/module/snd_soc_rockchip_vad/parameters/voice_inactive_frames", "r");
+    if (!fp) {
+        perror("fopen voice_inactive_frames\n");
+        return -1;
+    }
+    fscanf(fp, "%u\n", &frames);
+    fclose(fp);
+    #if 0
+    fp = popen("cat /sys/module/snd_soc_rockchip_vad/parameters/voice_inactive_frames", "r");
+    if (!fp) {
+        perror("popen");
+        exit(EXIT_FAILURE);
+    }
+    memset(buf, 0, sizeof(buf));
+    if (fgets(buf, sizeof(buf) - 1, fp) != 0 ) {
+        sscanf(buf, "%ul", &frames);
+        //printf("%s frames %lu\n", buf, frames);
+    }
+    pclose(fp);
+#endif
+    return frames;
+}
+
+bool IsRunningStatus(void* arg) {
+    duerOSDcsApp::application::DCSApplication * app = (duerOSDcsApp::application::DCSApplication *)arg;
+    duerOSDcsApp::application::DuerLinkNetworkStatus durlink_status = duerOSDcsApp::application::DuerLinkWrapper::getInstance()->getNetworkStatus();
+    if (durlink_status == duerOSDcsApp::application::DUERLINK_NETWORK_CONFIG_STARTED
+            || durlink_status == duerOSDcsApp::application::DUERLINK_NETWORK_CONFIGING) {
+        return true;
+    }
+
+    if (app->isPlayerRunning()) {
+        return true;
+    }
+
+    return false;
+}
+
+bool sleep_check(void* arg) {
+    unsigned int inactive_frames = read_voice_inactive_frames();
+
+    if (IsRunningStatus(arg)) {
+        deviceCommonLib::deviceTools::DeviceUtils::clear_voice_inactive_frames();
+    }
+
+    if ((inactive_frames > voice_inactive_max_count))
+        return true;
+    return false;
+}
+
+void wait_device_mode_timeout_ms(int microseconds)
+{
+    struct timeval tv;
+    long long absmsec;
+    struct timespec abstime;
+
+    gettimeofday(&tv, NULL);
+    absmsec = tv.tv_sec * 1000ll + tv.tv_usec / 1000ll;
+    absmsec += microseconds;
+
+    abstime.tv_sec = absmsec / 1000ll;
+    abstime.tv_nsec = absmsec % 1000ll * 1000000ll;
+
+    printf("#### public sleep mode ####");
+    pthread_mutex_lock(&mylock);
+    pthread_cond_timedwait(&mycond, &mylock, &abstime);
+    pthread_mutex_unlock(&mylock);
+    printf("#### return sleep mode succeed ####");
+}
+
+void *vad_detect_func(void* arg) {
+    //system("../bin/aispeech_led  -m single -i 2 0");
+    system("echo 0 > /sys/module/snd_soc_rockchip_vad/parameters/voice_inactive_frames");
+    while (true) {
+        if (sleep_check(arg)) {
+            fprintf(stderr,"voice inactive timeout,go to sleep\n");
+            //enter sleep mode
+            duerOSDcsApp::application::DCSApplication::enterSleepMode();
+            //......
+            wait_device_mode_timeout_ms(3000);
+            printf("pause >>>>\n");
+            system("echo 0 > /sys/module/snd_soc_rockchip_vad/parameters/voice_inactive_frames");
+            system("echo mem > /sys/power/state");
+            printf("resume >>>>\n");
+            //enter normal mode
+            //......
+            duerOSDcsApp::application::DCSApplication::enterWakeupMode();
+        } else {
+            //fprintf(stderr,"read_voice_inactive_frames:%d\n",read_voice_inactive_frames());
+        }
+        usleep(1000*1000);
+    }
+}
+
 
 int main(int argc, char** argv) {
     deviceCommonLib::deviceTools::printTickCount("duer_linux main begin");
@@ -90,6 +197,9 @@ int main(int argc, char** argv) {
         duerOSDcsApp::application::DeviceIoWrapper::getInstance()->release();
         return EXIT_FAILURE;
     }
+
+    pthread_t softvad_detect;
+    pthread_create(&softvad_detect,NULL,vad_detect_func,dcsApplication.get());
 
     // This will run until application quit.
     dcsApplication->run();

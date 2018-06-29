@@ -345,6 +345,10 @@ public:
      */
     void notifyResetHttp2Connection();
 
+    static void enterSleepMode();
+
+    static void enterWakeupMode();
+
 #ifdef KITTAI_KEY_WORD_DETECTOR
     /**
      * \if english

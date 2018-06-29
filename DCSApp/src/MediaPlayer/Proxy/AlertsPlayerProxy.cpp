@@ -76,20 +76,25 @@ MediaPlayerStatus AlertsPlayerProxy::setOffset(std::chrono::milliseconds offset)
 }
 
 MediaPlayerStatus AlertsPlayerProxy::play() {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     m_impl->audioPlay(m_res_path.c_str(), 0, 15000);
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
     return MediaPlayerStatus::SUCCESS;
 }
 
 MediaPlayerStatus AlertsPlayerProxy::stop() {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     m_impl->audioStop();
     return MediaPlayerStatus::SUCCESS;
 }
 
 MediaPlayerStatus AlertsPlayerProxy::pause() {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     return MediaPlayerStatus::FAILURE;
 }
 
 MediaPlayerStatus AlertsPlayerProxy::resume() {
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     return MediaPlayerStatus::FAILURE;
 }
 
@@ -118,7 +123,7 @@ void AlertsPlayerProxy::playbackStarted(int offset_ms) {
     if (m_playerObserver) {
         m_playerObserver->onPlaybackStarted();
     }
-
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_START;
     ActivityMonitorSingleton::getInstance()->updatePlayerStatus(PLAYER_STATUS_ON);
 }
 
@@ -141,7 +146,7 @@ void AlertsPlayerProxy::playbackFinished(int offset_ms, AudioPlayerFinishStatus 
     if (m_playerObserver) {
         m_playerObserver->onPlaybackFinished();
     }
-
+    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
     ActivityMonitorSingleton::getInstance()->updatePlayerStatus(PLAYER_STATUS_OFF);
 }
 

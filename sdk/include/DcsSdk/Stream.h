@@ -58,6 +58,13 @@ public:
     virtual void close() = 0;
 };
 
+enum class AudioPlayerStatus {
+    PLAY_IDLE,
+    PLAY_START,
+    PLAYING,
+    PLAY_PAUSE,
+    PLAY_OVER
+};
 }  // namespace sdkInterfaces
 }  // namespace duerOSDcsSDK
 

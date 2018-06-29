@@ -140,7 +140,7 @@ bool DCSApplication::initialize() {
 
     auto applicationManager = std::make_shared<ApplicationManager>();
 
-    duerOSDcsSDK::sdkInterfaces::DcsSdkParameters parameters;
+
     parameters.setPathToConfig(PATH_TO_CONFIG);
     parameters.setPathToRuntimeConfig(PATH_TO_RUNTIME_CONFIG);
     parameters.setDeviceId(DeviceIoWrapper::getInstance()->getDeviceId());
@@ -368,6 +368,51 @@ void DCSApplication::recordDataInputCallback(const char* buffer, unsigned int si
     DeviceIoWrapper::getInstance()->transmitAudioToBluetooth(buffer, size);
     /// save record data to file.
     RecordAudioManager::getInstance()->transmitAudioRecordData(buffer, size);
+}
+
+bool DCSApplication::isPlayerRunning() {
+    if (parameters.getSpeakMediaPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_START
+        ||parameters.getSpeakMediaPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING) {
+        return true;
+    }
+
+    if (parameters.getAudioMediaPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_START
+        ||parameters.getAudioMediaPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING) {
+        return true;
+    }
+
+    if (parameters.getAlertsMediaPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_START
+        ||parameters.getAlertsMediaPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING) {
+        return true;
+    }
+
+    if (parameters.getLocalMediaPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_START
+        ||parameters.getLocalMediaPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING) {
+        return true;
+    }
+
+    if (parameters.getLocalPromptPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_START
+        ||parameters.getLocalMediaPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING) {
+        return true;
+    }
+
+    if (parameters.getLocalTtsMediaPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_START
+        ||parameters.getLocalTtsMediaPlayer()->m_audioPlayerStatus == duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING) {
+        return true;
+    }
+    return false;
+}
+
+bool DCSApplication::isBusy() {
+    return true;
+}
+
+void DCSApplication::enterSleepMode() {
+    duerOSDcsSDK::sdkInterfaces::DcsSdk::enterSleepMode();
+}
+
+void DCSApplication::enterWakeupMode() {
+    duerOSDcsSDK::sdkInterfaces::DcsSdk::enterWakeupMode();
 }
 
 }  // namespace application
