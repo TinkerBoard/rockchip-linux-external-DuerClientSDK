@@ -202,7 +202,7 @@ bool start_wpa_supplicant() {
         deviceCommonLib::deviceTools::printTickCount("network_config connect_ap end.");
         return ret;
     }
-    ret = system_command("dhcpcd wlan0 &");
+    ret = system_command("dhcpcd wlan0 -t 0 &");
     if (!ret) {
         APP_ERROR("dhcpcd failed\n");
         deviceCommonLib::deviceTools::printTickCount("network_config connect_ap end.");
@@ -224,7 +224,12 @@ bool set_ap_tmp_ipaddr() {
         return false;
     }
 
-    return system_command("ifconfig wlan1 192.168.1.1 netmask 255.255.255.0 &");
+    string cmd;
+    cmd += "ifconfig ";
+    cmd += DUERLINK_NETWORK_DEVICE_MTK_FOR_AP;
+    cmd += " 192.168.1.1 netmask 255.255.255.0 &";
+
+    return system_command(cmd.c_str());
 }
 
 bool delete_tmp_addr() {
@@ -233,7 +238,12 @@ bool delete_tmp_addr() {
         return true;
     }
 
-    return system_command("ip addr delete 192.168.1.1 dev wlan1 &");
+    string cmd;
+    cmd += "ip addr delete 192.168.1.1 dev ";
+    cmd += DUERLINK_NETWORK_DEVICE_MTK_FOR_AP;
+    cmd += " &";
+
+    return system_command(cmd.c_str());
 }
 
 bool echo_ap_to_devwifi() {
@@ -267,7 +277,12 @@ bool starup_ap_interface() {
         return true;
     }
 
-    return system_command("ifconfig wlan1 up &");
+    string cmd;
+    cmd += "ifconfig ";
+    cmd += DUERLINK_NETWORK_DEVICE_MTK_FOR_AP;
+    cmd += " up &";
+
+    return system_command(cmd.c_str());
 }
 
 bool down_ap_interface() {
@@ -276,7 +291,12 @@ bool down_ap_interface() {
         return true;
     }
 
-    return system_command("ifconfig wlan1 down &");
+    string cmd;
+    cmd += "ifconfig ";
+    cmd += DUERLINK_NETWORK_DEVICE_MTK_FOR_AP;
+    cmd += " down &";
+
+    return system_command(cmd.c_str());
 }
 
 bool starup_wlan0_interface() {
@@ -309,7 +329,10 @@ bool start_dhcp_server() {
 }
 
 bool change_hostapd_conf(const string ssid) {
-    string conf_ct_all = NETWORK_SSID_CONFIG_HEAD;
+
+    string conf_ct_all = NETWORK_SSID_CONFIG_HEAD1;
+    conf_ct_all += DUERLINK_NETWORK_DEVICE_MTK_FOR_AP;
+    conf_ct_all += NETWORK_SSID_CONFIG_HEAD2;
     conf_ct_all += ssid;
     conf_ct_all += "\n";
     conf_ct_all += NETWORK_SSID_CONFIG_MIDDLE;
@@ -402,7 +425,12 @@ bool softap_prepare_env_cb() {
     cmd += Configuration::getInstance()->getSsidPrefix();
     get_device_interface_mac(mac_address);
     cmd += mac_address;
-    system(cmd.c_str());
+    system_command(cmd.c_str());
+    int time = 100;
+    while (time-- > 0 && access("/var/run/hostapd", F_OK)) {
+        usleep(100 * 1000);
+    }
+    usleep(100 * 1000);
 #else
     set_softAp_ssid_and_pwd(DUERLINK_WPA_HOSTAPD_CONFIG_FILE_PATH_MTK);
 
@@ -458,7 +486,7 @@ bool softap_destroy_env_cb() {
 
     APP_INFO("destroy softAp environment resource.");
 #ifdef Rk3308
-    system("softapDemo stop");
+    system_command("softapDemo stop");
 #else
     if (!stop_dhcp_server()) {
         APP_ERROR("stop dhcp server failed.");
@@ -1330,6 +1358,57 @@ void DuerLinkMtkInstance::start_verify_network() {
     } else {
         APP_INFO("start_verify_network m_pinging is TRUE, return");
     }
+}
+
+#include <errno.h>
+#include <fcntl.h>
+class HostAPHelper {
+ public:
+  static const char constexpr *WIFI_CHIP_TYPE_PATH = "/sys/class/rkwifi/chip";
+  HostAPHelper() { memset(iname, 0, sizeof(iname)); };
+  // copy from external/softapDemo/src/main.c
+  int check_wifi_chip_type_string() {
+    if (iname[0])
+      return 0;
+
+    int wififd = open(WIFI_CHIP_TYPE_PATH, O_RDONLY);
+
+    if (wififd < 0) {
+      APP_ERROR("Can't open %s, errno = %d", WIFI_CHIP_TYPE_PATH, errno);
+      return -1;
+    }
+    if (0 >= read(wififd, iname, sizeof(iname))) {
+      APP_ERROR("read %s failed", WIFI_CHIP_TYPE_PATH);
+      close(wififd);
+      return -1;
+    }
+    close(wififd);
+    if (!strncmp(iname, "RTL", 3))
+      strcpy(iname, "p2p0");
+    else
+      strcpy(iname, "wlan1");
+    APP_INFO("%s: %s", __FUNCTION__, iname);
+
+    return 0;
+  }
+
+  char* get_iname() {
+    static std::mutex mtx;
+    std::lock_guard<std::mutex> _lk(mtx);
+    check_wifi_chip_type_string();
+    if (iname[0])
+      return iname;
+    return nullptr;
+  }
+
+ private:
+  char iname[32];
+};
+static HostAPHelper hostap_helper;
+
+const char* DuerLinkMtkInstance::get_hostap_interface() {
+    char *iname = hostap_helper.get_iname();
+    return iname ? (const char*)iname : "wlan1";
 }
 
 }  // namespace application

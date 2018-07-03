@@ -93,14 +93,14 @@ void DuerLinkWrapper::initDuerLink() {
     DuerLinkMtkInstance::get_instance()->init_config_network_parameter(duerLink::platform_type::EHodor,
                                                                        duerLink::auto_config_network_type::EAll,
                                                                        DeviceIoWrapper::getInstance()->getDeviceId(),
-                                                                       "wlan1");
+                                                                       DuerLinkMtkInstance::get_instance()->get_hostap_interface());
 
 #else
 void DuerLinkWrapper::initDuerLink(const std::string& bdussFilePath, const std::string& clientId) {
     DuerLinkMtkInstance::get_instance()->init_config_network_parameter(duerLink::platform_type::EHodor,
                                                                        duerLink::auto_config_network_type::EAll,
                                                                        DeviceIoWrapper::getInstance()->getDeviceId(),
-                                                                       "wlan1",
+                                                                       DuerLinkMtkInstance::get_instance()->get_hostap_interface(),
                                                                        bdussFilePath,
                                                                        clientId);
 #endif
