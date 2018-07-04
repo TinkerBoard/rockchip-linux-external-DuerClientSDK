@@ -11,9 +11,21 @@ include_directories(
     sdk/include/duer_link/device_ctrl_observer
     third/include
     Framework/include)
+
+if(CPU_ARCH STREQUAL "arm")
+	message("CPU_ARCH is ${CPU_ARCH}")
+	set(DUEROS_SDK_LIB_DIR sdk/lib32)
+	set(DUEROS_THIRD_LIB_DIR third/lib32)
+endif()
+if(CPU_ARCH STREQUAL "aarch64")
+	message("CPU_ARCH is ${CPU_ARCH}")
+	set(DUEROS_SDK_LIB_DIR sdk/lib64)
+	set(DUEROS_THIRD_LIB_DIR third/lib64)
+endif()
+
 link_directories(
-    sdk/lib
-    third/lib)
+    ${DUEROS_SDK_LIB_DIR}
+    ${DUEROS_THIRD_LIB_DIR})
 
 add_definitions(-DLinux)
 add_definitions(-D${Platform})
@@ -42,5 +54,3 @@ add_subdirectory("DCSApp")
 add_subdirectory("Framework")
 add_subdirectory("appresources")
 
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/sdk/lib DESTINATION ${CMAKE_INSTALL_PREFIX})
-#install(DIRECTORY ${CMAKE_SOURCE_DIR}/resources DESTINATION ${CMAKE_INSTALL_PREFIX}/../data/)

@@ -46,7 +46,6 @@ const unsigned int voice_inactive_max_count = 16000 * 5; //16k, 3 seconds
 unsigned int read_voice_inactive_frames(void)
 {
     FILE *fp = nullptr;
-    // char buf[100] = {0};
     unsigned int frames = 0;
 
     fp = fopen("/sys/module/snd_soc_rockchip_vad/parameters/voice_inactive_frames", "r");
@@ -56,19 +55,6 @@ unsigned int read_voice_inactive_frames(void)
     }
     fscanf(fp, "%u\n", &frames);
     fclose(fp);
-    #if 0
-    fp = popen("cat /sys/module/snd_soc_rockchip_vad/parameters/voice_inactive_frames", "r");
-    if (!fp) {
-        perror("popen");
-        exit(EXIT_FAILURE);
-    }
-    memset(buf, 0, sizeof(buf));
-    if (fgets(buf, sizeof(buf) - 1, fp) != 0 ) {
-        sscanf(buf, "%ul", &frames);
-        //printf("%s frames %lu\n", buf, frames);
-    }
-    pclose(fp);
-#endif
     return frames;
 }
 

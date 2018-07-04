@@ -126,6 +126,10 @@ else()
     set(DCS_SDK_LIB DcsClient)
 endif()
 
+if(CPU_ARCH STREQUAL "aarch64")
+	target_link_libraries(duer_linux utils_bd_ipc)
+endif()
+
 target_link_libraries(duer_linux
         ${DCS_SDK_LIB}
         DeviceIo
@@ -147,7 +151,6 @@ target_link_libraries(duer_linux
         "${DLNA_SDK_LIB}"
 	iconv
 	bd_alsa_audio_client
-        utils_bd_ipc
 	curl
         )
 
@@ -170,3 +173,4 @@ if(${Platform} STREQUAL Ingenic)
 endif()
 
 install(TARGETS duer_linux DESTINATION "${CMAKE_INSTALL_PREFIX}")
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/${DUEROS_SDK_LIB_DIR} DESTINATION ${CMAKE_INSTALL_PREFIX})
