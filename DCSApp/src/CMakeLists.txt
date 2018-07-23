@@ -149,9 +149,13 @@ target_link_libraries(duer_linux
         "${TTS_SDK_LIB}"
         "${CRAB_SDK_LIB}"
         "${DLNA_SDK_LIB}"
-	iconv
-	bd_alsa_audio_client
-	curl
+        iconv
+        bd_alsa_audio_client
+        curl
+        sqlite3
+        z
+        crypto
+        ssl
         )
 
 # use gperftools
@@ -174,3 +178,10 @@ endif()
 
 install(TARGETS duer_linux DESTINATION "${CMAKE_INSTALL_PREFIX}")
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/${DUEROS_SDK_LIB_DIR} DESTINATION ${CMAKE_INSTALL_PREFIX})
+# install the third libs
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/${DUEROS_THIRD_LIB_DIR} DESTINATION ${CMAKE_INSTALL_PREFIX}
+        PATTERN "*.a" EXCLUDE
+        PATTERN "preloadable_libiconv.so" EXCLUDE
+        )
+# PATTERN "engines" EXCLUDE
+# FILES_MATCHING PATTERN "lib*.so*"

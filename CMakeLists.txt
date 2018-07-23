@@ -9,18 +9,19 @@ include_directories(
     sdk/include/duer_link
     sdk/include/duer_link/network_observer
     sdk/include/duer_link/device_ctrl_observer
-    third/include
     Framework/include)
 
 if(CPU_ARCH STREQUAL "arm")
 	message("CPU_ARCH is ${CPU_ARCH}")
 	set(DUEROS_SDK_LIB_DIR sdk/lib32)
 	set(DUEROS_THIRD_LIB_DIR third/lib32)
+	include_directories(third/include32)
 endif()
 if(CPU_ARCH STREQUAL "aarch64")
 	message("CPU_ARCH is ${CPU_ARCH}")
 	set(DUEROS_SDK_LIB_DIR sdk/lib64)
 	set(DUEROS_THIRD_LIB_DIR third/lib64)
+	include_directories(third/include64)
 endif()
 
 link_directories(
