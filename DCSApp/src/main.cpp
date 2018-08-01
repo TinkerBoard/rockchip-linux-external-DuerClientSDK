@@ -187,8 +187,10 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+#if ENABLE_SOFTVAD
     pthread_t softvad_detect;
     pthread_create(&softvad_detect,NULL,vad_detect_func,dcsApplication.get());
+#endif
 
     // This will run until application quit.
     dcsApplication->run();

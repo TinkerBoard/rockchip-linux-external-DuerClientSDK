@@ -32,6 +32,11 @@ namespace deviceTools {
 class DeviceUtils {
 public:
     static void clear_voice_inactive_frames();
+    static void set_pkg_index(int pkg_index);
+    static int get_pkg_index();
+
+private:
+    static int m_pkg_index;
 };
 
 }
