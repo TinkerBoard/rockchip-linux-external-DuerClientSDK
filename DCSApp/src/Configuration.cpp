@@ -65,7 +65,7 @@ void Configuration::release() {
     }
 }
 
-Configuration::Configuration():m_appConfigFile("./resources/app_config.json"),
+Configuration::Configuration():m_appConfigFile("./appresources/app_config.json"),
                                m_duerosConfigFile("./resources/dueros_config.json"),
                                m_commonVolume(DEFAULT_COMMON_VOLUME),
                                m_alertsVolume(DEFAULT_ALERTS_VOLUME),
