@@ -17,6 +17,7 @@
 #include "DeviceIo/DeviceIo.h"
 
 #include <unistd.h>
+#include <signal.h>
 #include <cmath>
 #include <pthread.h>
 #include <LoggerUtils/DcsSdkLogger.h>
@@ -53,11 +54,16 @@ static pthread_mutex_t  user_volume_mutex;
 static pthread_t tid = 0;
 static int socket_recv_done = 0;
 static tSOCKET_APP socket_app;
+
+#ifdef BLUEZ5_UTILS
+static char sock_path[]="/data/bluez5_utils/socket_dueros";
+#else
 static char sock_path[]="/data/bsa/config/socket_dueros";
+#endif
 
 static int ble_socket_send(void *data, int len) {
 /*
-    printf("ble_socket_send, len: %d", len);
+    printf("ble_socket_send, len: %d\n", len);
     for(int i = 0; i < len; i++)
         printf("%02x ", ((char*)data)[i]);
     printf("\n\n");
@@ -71,10 +77,17 @@ static void *ble_socket_recieve(void *arg) {
 
     APP_DEBUG("ble_socket_recieve\n");
 
+#ifdef BLUEZ5_UTILS
+    if (-1 == system("mkdir -p /data/bluez5_utils")) {
+        APP_ERROR("mkdir /data/bluez5_utils failed, errno : %d\n", errno);
+        goto exit;
+    }
+#else
     if (-1 == system("mkdir -p /data/bsa/config")) {
         APP_ERROR("mkdir /data/bsa/config failed\n");
         goto exit;
     }
+#endif
 
     strcpy(socket_app.sock_path, sock_path);
     if ((setup_socket_server(&socket_app)) < 0) {
@@ -94,8 +107,9 @@ static void *ble_socket_recieve(void *arg) {
             APP_DEBUG("Client leaved, break\n");
             break;
         }
+
 /*
-        printf("ble_socket_recieve, bytes: %d", bytes);
+        printf("ble_socket_recieve, bytes: %d\n", bytes);
         for(int i = 0; i < bytes; i++)
             printf("%02x ", (data)[i]);
         printf("\n\n");
@@ -105,12 +119,26 @@ static void *ble_socket_recieve(void *arg) {
 
 exit:
     APP_DEBUG("Exit socket recv thread\n");
-    pthread_exit(0);
+    return NULL;
+}
+
+void socket_recieve_handle(int signal, siginfo_t *siginfo, void *u_contxt) {
+    APP_DEBUG("socket_recieve_handle exec for kill\n");
+    pthread_exit(NULL);
+    return;
 }
 
 static int ble_socket_thread_create(void) {
+    struct sigaction sigact;
+
     if(!socket_recv_done) {
         socket_recv_done = 1;
+
+        sigact.sa_sigaction = socket_recieve_handle;
+        sigact.sa_flags = SA_SIGINFO;
+        sigemptyset(&sigact.sa_mask);
+        sigaction(SIGUSR2, &sigact, NULL);
+
         if (pthread_create(&tid, NULL, ble_socket_recieve, NULL)) {
             APP_ERROR("Create bsa ble pthread failed\n");
             return -1;
@@ -121,9 +149,18 @@ static int ble_socket_thread_create(void) {
 }
 
 static void ble_socket_thread_delete(void) {
+    int ret;
     if(socket_recv_done) {
         socket_recv_done = 0;
         if (tid) {
+            ret = pthread_kill(tid, SIGUSR2);
+            if(ret == 0) {
+                APP_DEBUG("pthread_kill success\n");
+            } else {
+                APP_DEBUG("pthread_kill error\n");
+                return;
+            }
+
             pthread_join(tid, NULL);
             tid = 0;
         }
@@ -131,10 +168,17 @@ static void ble_socket_thread_delete(void) {
 }
 
 static int ble_wifi_introducer_server_open(void) {
-    if (-1 == system("bsa_ble_wifi_introducer.sh start")) {
-        APP_ERROR("Start bsa ble failed\n");
+#ifdef BLUEZ5_UTILS
+    if (-1 == system("/usr/bin/bluez5_utils_wifi_config.sh start")) {
+        APP_ERROR("Start bluez5 utils bt failed, errno: %d\n", errno);
         return -1;
     }
+#else
+    if (-1 == system("/usr/bin/bsa_ble_wifi_introducer.sh start")) {
+        APP_ERROR("Start bsa ble failed, errno: %d\n", errno);
+        return -1;
+    }
+#endif
 
     return 0;
 }
@@ -142,10 +186,17 @@ static int ble_wifi_introducer_server_open(void) {
 static int ble_wifi_introducer_server_close(void) {
     teardown_socket_server(&socket_app);
 
-    if (-1 == system("bsa_ble_wifi_introducer.sh stop")) {
-        APP_DEBUG("Stop bsa ble failed\n");
+#ifdef BLUEZ5_UTILS
+    if (-1 == system("/usr/bin/bluez5_utils_wifi_config.sh stop")) {
+        APP_ERROR("Stop bluez5 utils bt failed, errno: %d\n", errno);
         return -1;
     }
+#else
+    if (-1 == system("/usr/bin/bsa_ble_wifi_introducer.sh stop")) {
+        APP_DEBUG("Stop bsa ble failed, errno: %d\n", errno);
+        return -1;
+    }
+#endif
 
     return 0;
 }
@@ -618,7 +669,7 @@ int DeviceIo::controlBt(BtControl cmd, void *data, int len) {
     int ret = 0;
     switch (cmd) {
     case BtControl::BT_IS_OPENED:
-        if(tid)
+        if(socket_recv_done)
             ret = 1;
         break;
 
