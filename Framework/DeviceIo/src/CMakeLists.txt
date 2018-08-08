@@ -254,6 +254,10 @@ else()
                 linux/InfoLed.cpp
                 linux/DeviceIo.cpp)
     target_link_libraries(DeviceIo wpa_client SocketApp)
+
+    if(BLUEZ5_UTILS)
+	add_definitions(-DBLUEZ5_UTILS)
+    endif(BLUEZ5_UTILS)
 endif()
 
 target_include_directories(DeviceIo PUBLIC
