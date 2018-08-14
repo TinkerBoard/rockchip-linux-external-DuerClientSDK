@@ -25,6 +25,12 @@ namespace framework {
 
 #define PLAYBACK_DEVICE_NUM 1
 
+enum class BtControlType {
+    BT_NONE = 0,
+    BT_AUDIO_PLAY,
+    BLE_WIFI_INTRODUCER
+};
+
 /* led control cmd */
 enum class LedState {
     LED_NET_RECOVERY = 0,
@@ -75,6 +81,8 @@ enum class BtControl {
     BT_UNPAIR,
     BT_PAUSE_PLAY,
     BT_RESUME_PLAY,
+    BT_VOLUME_UP,
+    BT_VOLUME_DOWN,
     BT_AVRCP_FWD,
     BT_AVRCP_BWD,
     BT_AVRCP_STOP,
@@ -83,12 +91,17 @@ enum class BtControl {
     BLE_CLOSE_SERVER,
     BLE_SERVER_SEND,
     BLE_IS_OPENED,
+    A2DP_SINK_OPEN,
+    A2DP_SINK_CLOSE,
+    A2DP_IS_OPENED,
     GET_BT_MAC,
     GET_WIFI_MAC,
     GET_WIFI_IP,
     GET_WIFI_SSID,
     GET_WIFI_BSSID,
-    GET_LOCAL_NAME
+    GET_LOCAL_NAME,
+    SET_BT_CONTROL_TYPE,
+    GET_BT_CONTROL_TYPE
 };
 
 /* input event */

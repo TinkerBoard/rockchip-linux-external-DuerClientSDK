@@ -51,7 +51,7 @@ using std::ifstream;
 static string m_target_ssid;
 static string m_target_pwd;
 static string m_target_ssid_prefix;
-static bool m_ble_is_opened = false;
+static bool m_bt_is_opened = false;
 static int m_ping_interval = 1;
 static int m_network_status = 0;
 static bool m_pinging = false;
@@ -589,15 +589,22 @@ bool platform_connect_wifi_cb(const char *ssid,
 
 bool ble_prepare_env_cb() {
     APP_INFO("prepare ble environment resource.");
+    int a2dp_is_opened = framework::DeviceIo::getInstance()->controlBt(framework::BtControl::A2DP_IS_OPENED);
+    if(a2dp_is_opened) {
+        APP_DEBUG("Close a2dp sink.");
+        framework::DeviceIo::getInstance()->controlBt(framework::BtControl::A2DP_SINK_CLOSE);
+    }
 
-    m_ble_is_opened = framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BT_IS_OPENED);
-    if (!m_ble_is_opened) {
-        APP_ERROR("Open bluetooth.");
+    framework::BtControlType type = framework::BtControlType::BLE_WIFI_INTRODUCER;
+    framework::DeviceIo::getInstance()->controlBt(framework::BtControl::SET_BT_CONTROL_TYPE, &type);
+
+    m_bt_is_opened = framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BT_IS_OPENED);
+    if(!m_bt_is_opened) {
+        APP_DEBUG("Open bluetooth.");
         framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BT_OPEN);
     }
 
     framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BLE_OPEN_SERVER);
-
     APP_INFO("End prepare ble environment resource.");
 
     return true;
@@ -608,15 +615,13 @@ bool ble_destroy_env_cb() {
 
     framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BLE_CLOSE_SERVER);
 
-    if (!m_ble_is_opened) {
-        APP_INFO("Close bluetooth.");
-        framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BT_CLOSE);
+    m_bt_is_opened = framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BT_IS_OPENED);
+    if (m_bt_is_opened) {
         APP_INFO("Close led.");
         DeviceIoWrapper::getInstance()->ledBtOff();
     }
 
     APP_INFO("End destroy ble environment resource.");
-
     return true;
 }
 
