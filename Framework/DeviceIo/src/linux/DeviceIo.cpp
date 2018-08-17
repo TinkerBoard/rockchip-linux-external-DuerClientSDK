@@ -266,6 +266,7 @@ static int cset(char *value_string, int roflag)
             APP_INFO("Control %s element write volume %s successfully\n", card,
                      value_string);
         }
+        system("alsactl store --file=/data/cfg/asound.state");
     } else {
         int vol_l, vol_r;
         snd_ctl_elem_value_set_id(control, id);
