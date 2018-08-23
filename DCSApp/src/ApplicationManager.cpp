@@ -303,6 +303,9 @@ void ApplicationManager::informSdkConnectionStatus(duerOSDcsSDK::sdkInterfaces::
         break;
 
     case duerOSDcsSDK::sdkInterfaces::SdkConnectionState::SDK_CONNECT_SUCCEED:
+        int bt_is_opened, ble_is_opened;
+        framework::BtControlType type;
+
         APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_CONNECT_SUCCEED");
         if (DuerLinkWrapper::getInstance()->isFirstNetworkReady() || DuerLinkWrapper::getInstance()->isFromConfigNetwork()) {
             APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_CONNECT_SUCCEED networkLinkOrRecoverySuccess");
@@ -311,7 +314,26 @@ void ApplicationManager::informSdkConnectionStatus(duerOSDcsSDK::sdkInterfaces::
             DuerLinkWrapper::getInstance()->setFirstNetworkReady(false);
             /// because app is working no notify network link, but after config network must notify
             DuerLinkWrapper::getInstance()->setFromConfigNetwork(false);
+
+            ble_is_opened = framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BLE_IS_OPENED);
+            if(ble_is_opened) {
+                APP_DEBUG("Close ble wifi config server.");
+                framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BLE_CLOSE_SERVER);
+            }
+
+            type = framework::BtControlType::BT_AUDIO_PLAY;
+            framework::DeviceIo::getInstance()->controlBt(framework::BtControl::SET_BT_CONTROL_TYPE, &type);
+
+            bt_is_opened = framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BT_IS_OPENED);
+            if(!bt_is_opened) {
+                APP_DEBUG("Open bluetooth.");
+                framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BT_OPEN);
+            }
+
+            APP_DEBUG("Open a2dp sink.");
+            framework::DeviceIo::getInstance()->controlBt(framework::BtControl::A2DP_SINK_OPEN);
         }
+
         break;
 
     default:

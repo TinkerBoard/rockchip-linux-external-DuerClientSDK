@@ -474,12 +474,17 @@ void DeviceIoWrapper::setCurrentVolume(int current_volume) {
     current_volume = std::max(current_volume, MIN_USER_VOLUME);
     current_volume = std::min(current_volume, MAX_USER_VOLUME);
     APP_INFO("%s, current_volume: %d\n", __func__, current_volume);
+
+    if(isBluetoothOpen())
+        btSetVolume(current_volume);
+
     DeviceIo::getInstance()->setVolume(current_volume,
 						(MUSIC_PLAYBACK_TRACK_ID |
 						INFO_PLAYBACK_TRACK_ID |
 						TTS_PLAYBACK_TRACK_ID |
 						RAPID_PLAYBACK_TRACK_ID |
 						NATTS_PLAYBACK_TRACK_ID));
+
     ledVolume();
     volumeChanged();
 }
@@ -587,6 +592,25 @@ void DeviceIoWrapper::btResumePlay() {
 
 void DeviceIoWrapper::btPausePlay() {
     DeviceIo::getInstance()->controlBt(BtControl::BT_PAUSE_PLAY);
+}
+
+void  DeviceIoWrapper::btSetVolume(int volume) {
+    int current_volume = DeviceIoWrapper::getInstance()->getCurrentVolume();
+
+    APP_INFO("current_volume: %d, volume: %d\n", current_volume, volume);
+
+    if(current_volume < volume)
+        btVolumeUp();
+    else if(current_volume > volume)
+        btVolumeDown();
+}
+
+void DeviceIoWrapper::btVolumeUp() {
+    DeviceIo::getInstance()->controlBt(BtControl::BT_VOLUME_UP);
+}
+
+void DeviceIoWrapper::btVolumeDown() {
+    DeviceIo::getInstance()->controlBt(BtControl::BT_VOLUME_DOWN);
 }
 
 void DeviceIoWrapper::btPlayPrevious() {
@@ -906,11 +930,17 @@ void DeviceIoWrapper::handlePlayAndPause() {
         if (m_applicationManager) {
             m_applicationManager->forceHoldFocus(true);
         }
+
+        if(isBluetoothOpen())
+            btPausePlay();
     } else {
         setPauseBtnFlag(false);
         if (m_applicationManager) {
             m_applicationManager->forceHoldFocus(false);
         }
+
+        if(isBluetoothOpen())
+            btResumePlay();
     }
 }
 

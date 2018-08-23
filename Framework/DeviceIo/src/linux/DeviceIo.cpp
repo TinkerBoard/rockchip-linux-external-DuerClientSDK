@@ -16,6 +16,7 @@
 
 #include "DeviceIo/DeviceIo.h"
 
+#include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
 #include <cmath>
@@ -44,6 +45,16 @@ typedef struct {
     bool    is_mute;
 } user_volume_t;
 
+typedef struct {
+    pthread_t tid;
+    int socket_recv_done;
+    int is_bt_open;
+    int is_ble_open;
+    int is_a2dp_open;
+    BtControlType type;
+    tSOCKET_APP socket_app;
+} bt_control_t;
+
 // static snd_mixer_t*      mixer_fd   = nullptr;
 // static snd_mixer_elem_t* mixer_elem = nullptr;
 static user_volume_t    user_volume = {0, false};
@@ -51,31 +62,50 @@ static pthread_mutex_t  user_volume_mutex;
 
 /* as same as APP_BLE_WIFI_INTRODUCER_GATT_ATTRIBUTE_SIZE */
 #define BLE_SOCKET_RECV_LEN 22
-static pthread_t tid = 0;
-static int socket_recv_done = 0;
-static tSOCKET_APP socket_app;
 
 #ifdef BLUEZ5_UTILS
-static char sock_path[]="/data/bluez5_utils/socket_dueros";
+static char sock_path[] = "/data/bluez5_utils/socket_dueros";
 #else
-static char sock_path[]="/data/bsa/config/socket_dueros";
+static char sock_path[] = "/data/bsa/config/socket_dueros";
 #endif
 
-static int ble_socket_send(void *data, int len) {
+static bt_control_t bt_control = {0, 0, 0, 0, 0, BtControlType::BT_NONE};
+
+static int bt_socket_send(void *data, int len) {
 /*
-    printf("ble_socket_send, len: %d\n", len);
+    printf("bt_socket_send, len: %d\n", len);
     for(int i = 0; i < len; i++)
         printf("%02x ", ((char*)data)[i]);
     printf("\n\n");
 */
-    return socket_send(socket_app.client_sockfd, (char*) data, len);
+    return socket_send(bt_control.socket_app.client_sockfd, (char*) data, len);
 }
 
-static void *ble_socket_recieve(void *arg) {
+static int bt_control_cmd_send(enum BtControlCmd bt_ctrl_cmd) {
+    char cmd[10];
+    memset(cmd, 0, 10);
+    sprintf(cmd, "%d", bt_ctrl_cmd);
+
+    if(bt_control.type != BtControlType::BT_AUDIO_PLAY) {
+        APP_DEBUG("Not bluetooth play mode, don`t send bluetooth control commands\n");
+        return 0;
+    }
+
+    APP_DEBUG("bt_control_cmd_send, cmd: %s, len: %d\n", cmd, strlen(cmd));
+
+    if(bt_socket_send(cmd, strlen(cmd)) < 0) {
+        APP_ERROR("Bt control cmd send failed\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+static void *bt_socket_recieve(void *arg) {
     char data[BLE_SOCKET_RECV_LEN];
     int bytes = 0;
 
-    APP_DEBUG("ble_socket_recieve\n");
+    APP_DEBUG("bt_socket_recieve\n");
 
 #ifdef BLUEZ5_UTILS
     if (-1 == system("mkdir -p /data/bluez5_utils")) {
@@ -89,27 +119,31 @@ static void *ble_socket_recieve(void *arg) {
     }
 #endif
 
-    strcpy(socket_app.sock_path, sock_path);
-    if ((setup_socket_server(&socket_app)) < 0) {
+    strcpy(bt_control.socket_app.sock_path, sock_path);
+    if ((setup_socket_server(&bt_control.socket_app)) < 0) {
         goto exit;
     }
 
-    if (accpet_client(&socket_app) < 0) {
+    if (accpet_client(&bt_control.socket_app) < 0) {
         goto exit;
     }
 
     APP_DEBUG("Client connected\n");
+    if(bt_control_cmd_send(APP_AVK_MENU_REGISTER) < 0) {
+        APP_ERROR("Bt socket send register failed\n");
+        goto exit;
+    }
 
-    while (socket_recv_done) {
+    while (bt_control.socket_recv_done) {
         memset(data, 0, sizeof(data));
-        bytes = socket_recieve(socket_app.client_sockfd, data, sizeof(data));
+        bytes = socket_recieve(bt_control.socket_app.client_sockfd, data, sizeof(data));
         if (bytes <= 0) {
             APP_DEBUG("Client leaved, break\n");
             break;
         }
 
 /*
-        printf("ble_socket_recieve, bytes: %d\n", bytes);
+        printf("bt_socket_recieve, bytes: %d\n", bytes);
         for(int i = 0; i < bytes; i++)
             printf("%02x ", (data)[i]);
         printf("\n\n");
@@ -128,19 +162,19 @@ void socket_recieve_handle(int signal, siginfo_t *siginfo, void *u_contxt) {
     return;
 }
 
-static int ble_socket_thread_create(void) {
+static int bt_socket_thread_create(void) {
     struct sigaction sigact;
 
-    if(!socket_recv_done) {
-        socket_recv_done = 1;
+    if(!bt_control.socket_recv_done) {
+        bt_control.socket_recv_done = 1;
 
         sigact.sa_sigaction = socket_recieve_handle;
         sigact.sa_flags = SA_SIGINFO;
         sigemptyset(&sigact.sa_mask);
         sigaction(SIGUSR2, &sigact, NULL);
 
-        if (pthread_create(&tid, NULL, ble_socket_recieve, NULL)) {
-            APP_ERROR("Create bsa ble pthread failed\n");
+        if (pthread_create(&bt_control.tid, NULL, bt_socket_recieve, NULL)) {
+            APP_ERROR("Create ble pthread failed\n");
             return -1;
         }
     }
@@ -148,23 +182,78 @@ static int ble_socket_thread_create(void) {
     return 0;
 }
 
-static void ble_socket_thread_delete(void) {
+static void bt_socket_thread_delete(void) {
     int ret;
-    if(socket_recv_done) {
-        socket_recv_done = 0;
-        if (tid) {
-            ret = pthread_kill(tid, SIGUSR2);
+    if(bt_control.socket_recv_done) {
+        bt_control.socket_recv_done = 0;
+        teardown_socket_server(&bt_control.socket_app);
+
+        if (bt_control.tid) {
+            ret = pthread_kill(bt_control.tid, SIGUSR2);
             if(ret == 0) {
                 APP_DEBUG("pthread_kill success\n");
+            } else if(ret == ESRCH) {
+                APP_DEBUG("The id = %ld thread has exited or does not exist\n", bt_control.tid);
             } else {
-                APP_DEBUG("pthread_kill error\n");
+                APP_DEBUG("pthread_kill error, ret: %d\n", ret);
                 return;
             }
 
-            pthread_join(tid, NULL);
-            tid = 0;
+            pthread_join(bt_control.tid, NULL);
+            bt_control.tid = 0;
         }
     }
+}
+
+static int bt_bsa_server_open(void) {
+#ifndef BLUEZ5_UTILS
+    if (-1 == system("bsa_server.sh start")) {
+        APP_ERROR("Start bsa server failed\n");
+        return -1;
+    }
+#endif
+    bt_control.is_bt_open = 1;
+    return 0;
+}
+
+static int bt_bsa_server_close(void) {
+    bt_control.is_bt_open = 0;
+
+#ifndef BLUEZ5_UTILS
+    if (-1 == system("bsa_server.sh stop")) {
+        APP_ERROR("Stop bsa server failed\n");
+        return -1;
+    }
+#endif
+    return 0;
+}
+
+static int bt_a2dp_sink_server_open(void) {
+    APP_DEBUG("bt_a2dp_sink_server_open\n");
+
+#ifndef BLUEZ5_UTILS
+    if (-1 == system("bsa_bt_sink.sh start")) {
+        APP_ERROR("Start a2dp sink failed\n");
+        return -1;
+    }
+#endif
+    bt_control.is_a2dp_open = 1;
+    return 0;
+}
+
+static int bt_a2dp_sink_server_close(void) {
+    bt_control.is_a2dp_open = 0;
+    bt_control_cmd_send(APP_AVK_MENU_QUIT);
+
+#ifndef BLUEZ5_UTILS
+    if (-1 == system("bsa_bt_sink.sh stop")) {
+        APP_DEBUG("Stop a2pd sink failed\n");
+        return -1;
+    }
+#endif
+
+    APP_DEBUG("bt_a2dp_sink_server_close\n");
+    return 0;
 }
 
 static int ble_wifi_introducer_server_open(void) {
@@ -179,13 +268,12 @@ static int ble_wifi_introducer_server_open(void) {
         return -1;
     }
 #endif
-
+    bt_control.is_ble_open = 1;
     return 0;
 }
 
 static int ble_wifi_introducer_server_close(void) {
-    teardown_socket_server(&socket_app);
-
+    bt_control.is_ble_open = 0;
 #ifdef BLUEZ5_UTILS
     if (-1 == system("/usr/bin/bluez5_utils_wifi_config.sh stop")) {
         APP_ERROR("Stop bluez5 utils bt failed, errno: %d\n", errno);
@@ -199,6 +287,28 @@ static int ble_wifi_introducer_server_close(void) {
 #endif
 
     return 0;
+}
+
+static int GetStatusValue(const char *key, char *src, int src_len,char *dst,
+                          int dst_size) {
+    char *result = nullptr;
+    if (src_len <= 0 || dst_size < 1)
+        return -1;
+    result = strstr(src, key);
+    if (!result)
+        return -1;
+    result += strlen(key);
+    char ch = *result;
+    int len = 0;
+    dst_size -= 1;
+    while (ch && ch != '\n' && len < dst_size) {
+        *dst++ = ch;
+        len++;
+        ch = *(++result);
+    }
+    *dst = 0;
+    APP_DEBUG("%s%s", key, dst - len);
+    return len;
 }
 
 static int cset(char *value_string, int roflag)
@@ -640,46 +750,71 @@ int DeviceIo::controlLed(LedState cmd, void *data, int len) {
     return 0;
 }
 
-static int GetStatusValue(const char *key, char *src, int src_len,char *dst,
-                          int dst_size) {
-    char *result = nullptr;
-    if (src_len <= 0 || dst_size < 1)
-        return -1;
-    result = strstr(src, key);
-    if (!result)
-        return -1;
-    result += strlen(key);
-    char ch = *result;
-    int len = 0;
-    dst_size -= 1;
-    while (ch && ch != '\n' && len < dst_size) {
-        *dst++ = ch;
-        len++;
-        ch = *(++result);
-    }
-    *dst = 0;
-    APP_DEBUG("%s%s", key, dst - len);
-    return len;
-}
-
 int DeviceIo::controlBt(BtControl cmd, void *data, int len) {
     using BtControl_rep_type = std::underlying_type<BtControl>::type;
 
-    APP_DEBUG("controlBt, cmd: %d", cmd);
+    APP_DEBUG("controlBt, cmd: %d\n", cmd);
 
     int ret = 0;
     switch (cmd) {
+    case BtControl::SET_BT_CONTROL_TYPE:
+        bt_control.type = *(BtControlType*)data;
+        APP_DEBUG("bt_control.type: %d", bt_control.type);
+        break;
+
+    case BtControl::GET_BT_CONTROL_TYPE:
+        ret = (int)bt_control.type;
+        break;
+
     case BtControl::BT_IS_OPENED:
-        if(socket_recv_done)
+        if(bt_control.is_bt_open)
+            ret = 1;
+        break;
+
+    case BtControl::BLE_IS_OPENED:
+        if(bt_control.is_ble_open)
+            ret = 1;
+        break;
+
+    case BtControl::A2DP_IS_OPENED:
+        if(bt_control.is_a2dp_open)
             ret = 1;
         break;
 
     case BtControl::BT_OPEN:
-        if(ble_socket_thread_create() < 0)
+        if(bt_bsa_server_open() < 0)
+            ret = -1;
+
+        break;
+
+    case BtControl::BT_CLOSE:
+        if(bt_bsa_server_close() < 0)
             ret = -1;
         break;
 
+    case BtControl::A2DP_SINK_OPEN:
+        if(bt_socket_thread_create() < 0) {
+            ret = -1;
+            break;
+        }
+
+        if(bt_a2dp_sink_server_open() < 0)
+            ret = -1;
+        break;
+
+    case BtControl::A2DP_SINK_CLOSE:
+        if(bt_a2dp_sink_server_close() < 0)
+            ret = -1;
+
+        bt_socket_thread_delete();
+        break;
+
     case BtControl::BLE_OPEN_SERVER:
+        if(bt_socket_thread_create() < 0) {
+            ret = -1;
+            break;
+        }
+
         if(ble_wifi_introducer_server_open() < 0)
             ret = -1;
         break;
@@ -687,10 +822,8 @@ int DeviceIo::controlBt(BtControl cmd, void *data, int len) {
     case BtControl::BLE_CLOSE_SERVER:
         if(ble_wifi_introducer_server_close() < 0)
             ret = -1;
-        break;
 
-    case BtControl::BT_CLOSE:
-        ble_socket_thread_delete();
+        bt_socket_thread_delete();
         break;
 
     case BtControl::GET_WIFI_BSSID:
@@ -700,8 +833,50 @@ int DeviceIo::controlBt(BtControl cmd, void *data, int len) {
         break;
 
     case BtControl::BLE_SERVER_SEND:
-        if(ble_socket_send(data, len) < 0) {
-            APP_ERROR("Ble socket send data failed\n");
+        if(bt_socket_send(data, len) < 0) {
+            APP_ERROR("Bt socket send data failed\n");
+            ret = -1;
+        }
+        break;
+
+    case BtControl::BT_VOLUME_UP:
+        if(bt_control_cmd_send(APP_AVK_MENU_VOLUME_UP) < 0) {
+            APP_ERROR("Bt socket send volume up cmd failed\n");
+            ret = -1;
+        }
+        break;
+
+    case BtControl::BT_VOLUME_DOWN:
+        if(bt_control_cmd_send(APP_AVK_MENU_VOLUME_DOWN) < 0) {
+            APP_ERROR("Bt socket send volume down cmd failed\n");
+            ret = -1;
+        }
+        break;
+
+    case BtControl::BT_RESUME_PLAY:
+        if(bt_control_cmd_send(APP_AVK_MENU_PLAY_START) < 0) {
+            APP_ERROR("Bt socket send play cmd failed\n");
+            ret = -1;
+        }
+        break;
+
+    case BtControl::BT_PAUSE_PLAY:
+        if(bt_control_cmd_send(APP_AVK_MENU_PLAY_PAUSE) < 0) {
+            APP_ERROR("Bt socket send pause cmd failed\n");
+            ret = -1;
+        }
+        break;
+
+    case BtControl::BT_AVRCP_FWD:
+        if(bt_control_cmd_send(APP_AVK_MENU_PLAY_PREVIOUS_TRACK) < 0) {
+            APP_ERROR("Bt socket send previous track cmd failed\n");
+            ret = -1;
+        }
+        break;
+
+    case BtControl::BT_AVRCP_BWD:
+        if(bt_control_cmd_send(APP_AVK_MENU_PLAY_NEXT_TRACK) < 0) {
+            APP_ERROR("Bt socket send next track cmd failed\n");
             ret = -1;
         }
         break;

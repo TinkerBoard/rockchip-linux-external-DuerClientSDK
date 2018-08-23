@@ -127,6 +127,15 @@ public:
     //暂停蓝牙播放
     void btPausePlay();
 
+    //设置蓝牙音量
+    void btSetVolume(int volume);
+
+    //蓝牙音量增大
+    void btVolumeUp();
+
+    //蓝牙音量减小
+    void btVolumeDown();
+
     //蓝牙播放上一个
     void btPlayPrevious();
 
