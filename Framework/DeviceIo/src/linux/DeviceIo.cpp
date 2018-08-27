@@ -406,8 +406,9 @@ static void softvol_set(int vol) {
 
     sprintf(value, "%d%%", vol);
     int ret = cset(value, 0);
+    int trytimes = 100;
     // try again, often fail first time
-    while (ret) {
+    while (ret && trytimes-- > 0) {
        usleep(100 * 1000);
        ret = cset(value, 0);
     }
