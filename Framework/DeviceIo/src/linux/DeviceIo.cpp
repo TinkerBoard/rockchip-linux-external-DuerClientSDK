@@ -70,6 +70,8 @@ static char sock_path[] = "/data/bsa/config/socket_dueros";
 #endif
 
 static bt_control_t bt_control = {0, 0, 0, 0, 0, BtControlType::BT_NONE};
+static void bt_a2dp_sink_cmd_process(char *data);
+static void bt_socket_thread_delete(void);
 
 static int bt_socket_send(void *data, int len) {
 /*
@@ -148,7 +150,10 @@ static void *bt_socket_recieve(void *arg) {
             printf("%02x ", (data)[i]);
         printf("\n\n");
 */
-        DeviceIo::getInstance()->getNotify()->callback(DeviceInput::BLE_SERVER_RECV, data, bytes);
+        if(bt_control.type == BtControlType::BT_AUDIO_PLAY)
+            bt_a2dp_sink_cmd_process(data);
+        else if(bt_control.type == BtControlType::BLE_WIFI_INTRODUCER)
+            DeviceIo::getInstance()->getNotify()->callback(DeviceInput::BLE_SERVER_RECV, data, bytes);
     }
 
 exit:
@@ -165,6 +170,7 @@ void socket_recieve_handle(int signal, siginfo_t *siginfo, void *u_contxt) {
 static int bt_socket_thread_create(void) {
     struct sigaction sigact;
 
+    APP_DEBUG("bt_socket_thread_create\n");
     if(!bt_control.socket_recv_done) {
         bt_control.socket_recv_done = 1;
 
@@ -184,6 +190,7 @@ static int bt_socket_thread_create(void) {
 
 static void bt_socket_thread_delete(void) {
     int ret;
+    APP_DEBUG("bt_socket_thread_delete\n");
     if(bt_control.socket_recv_done) {
         bt_control.socket_recv_done = 0;
         teardown_socket_server(&bt_control.socket_app);
@@ -217,14 +224,13 @@ static int bt_bsa_server_open(void) {
 }
 
 static int bt_bsa_server_close(void) {
-    bt_control.is_bt_open = 0;
-
 #ifndef BLUEZ5_UTILS
     if (-1 == system("bsa_server.sh stop")) {
         APP_ERROR("Stop bsa server failed\n");
         return -1;
     }
 #endif
+    bt_control.is_bt_open = 0;
     return 0;
 }
 
@@ -242,7 +248,6 @@ static int bt_a2dp_sink_server_open(void) {
 }
 
 static int bt_a2dp_sink_server_close(void) {
-    bt_control.is_a2dp_open = 0;
     bt_control_cmd_send(APP_AVK_MENU_QUIT);
 
 #ifndef BLUEZ5_UTILS
@@ -252,8 +257,56 @@ static int bt_a2dp_sink_server_close(void) {
     }
 #endif
 
+    bt_control.is_a2dp_open = 0;
     APP_DEBUG("bt_a2dp_sink_server_close\n");
     return 0;
+}
+
+static void bt_a2dp_sink_cmd_process(char *data) {
+    int cmd = atoi(data);
+
+    APP_DEBUG("bt_a2dp_sink_cmd_process, data: %s\n", data);
+    switch(cmd) {
+        case APP_AVK_BT_CONNECT:
+            APP_DEBUG("APP_AVK_BT_CONNECT\n");
+            break;
+
+        case APP_AVK_BT_DISCONNECT:
+            APP_DEBUG("APP_AVK_BT_DISCONNECT\n");
+            bt_a2dp_sink_server_close();
+            break;
+
+        case APP_AVK_BT_PLAY:
+            APP_DEBUG("APP_AVK_BT_PLAY\n");
+            break;
+
+        case APP_AVK_BT_STOP:
+            APP_DEBUG("APP_AVK_BT_STOP\n");
+            break;
+
+        case APP_AVK_BT_WAIT_PAIR:
+            APP_DEBUG("APP_AVK_BT_WAIT_PAIR\n");
+            break;
+
+        case APP_AVK_BT_PAIR_SUCCESS:
+            APP_DEBUG("APP_AVK_BT_PAIR_SUCCESS\n");
+            break;
+
+        case APP_AVK_BT_PAIR_FAILED_OTHER:
+            APP_DEBUG("APP_AVK_BT_PAIR_FAILED_OTHER\n");
+            break;
+    }
+}
+
+static void bt_a2dp_sink_close_wait(void) {
+    while(1) {
+        if(!bt_control.is_a2dp_open) {
+            break;
+        } else {
+            APP_DEBUG("wait a2dp sink server close\n");
+            sleep(1);
+        }
+    }
 }
 
 static int ble_wifi_introducer_server_open(void) {
@@ -269,11 +322,11 @@ static int ble_wifi_introducer_server_open(void) {
     }
 #endif
     bt_control.is_ble_open = 1;
+    APP_DEBUG("ble_wifi_introducer_server_open\n");
     return 0;
 }
 
 static int ble_wifi_introducer_server_close(void) {
-    bt_control.is_ble_open = 0;
 #ifdef BLUEZ5_UTILS
     if (-1 == system("/usr/bin/bluez5_utils_wifi_config.sh stop")) {
         APP_ERROR("Stop bluez5 utils bt failed, errno: %d\n", errno);
@@ -285,6 +338,8 @@ static int ble_wifi_introducer_server_close(void) {
         return -1;
     }
 #endif
+    bt_control.is_ble_open = 0;
+    APP_DEBUG("ble_wifi_introducer_server_close\n");
 
     return 0;
 }
@@ -804,9 +859,8 @@ int DeviceIo::controlBt(BtControl cmd, void *data, int len) {
         break;
 
     case BtControl::A2DP_SINK_CLOSE:
-        if(bt_a2dp_sink_server_close() < 0)
-            ret = -1;
-
+        bt_control_cmd_send(APP_AVK_MENU_CLOSE);
+        bt_a2dp_sink_close_wait();
         bt_socket_thread_delete();
         break;
 
