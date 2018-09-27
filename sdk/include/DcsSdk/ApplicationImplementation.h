@@ -345,6 +345,7 @@ public:
      */
     virtual bool getSpeakerMuteStatus() = 0;
 
+#ifdef SUPPORT_DEBUGGER
     /**
     * \if english
     *     @brief Start debug mode.
@@ -362,6 +363,7 @@ public:
      * \endif
      */
     virtual bool setStopDebugMode() = 0;
+#endif
 
     /**
      * \if english
@@ -648,6 +650,7 @@ public:
         return "";
     }
 
+#ifdef SUPPORT_INFRARED
     /**
      * \if english
      *     @brief send infrared ray code request
@@ -666,6 +669,7 @@ public:
                                             const std::string &pattern) {
         return false;
     }
+#endif
 };
 
 } // namespace sdkInterfaces

@@ -15,8 +15,11 @@
  */
 #include "DCSApp/ActivityMonitorSingleton.h"
 #include <unistd.h>
-#define SECS_PER_MIN 60
-#define JSON_FILE_NAME "./sdk_monitor.json"
+#include "LoggerUtils/DcsSdkLogger.h"
+
+#define MSECS_PER_MIN 60000000
+#define MONITOR_INTERVAL_MSECS 3000000
+#define JSON_FILE_NAME "/userdata/duer/sdk_monitor.json"
 namespace duerOSDcsApp {
 namespace application {
 ActivityMonitorSingleton* ActivityMonitorSingleton::s_instance = nullptr;
@@ -29,7 +32,8 @@ ActivityMonitorSingleton* ActivityMonitorSingleton::getInstance() {
 void ActivityMonitorSingleton::releaseInstance() {
     pthread_once(&s_destroy_once, ActivityMonitorSingleton::destory);
 }
-ActivityMonitorSingleton::ActivityMonitorSingleton() : m_threadAlive(true) {
+ActivityMonitorSingleton::ActivityMonitorSingleton() : m_isIdle(false),
+                                                       m_threadAlive(true) {
     pthread_mutex_init(&m_mutex, NULL);
     pthread_create(&m_threadId, nullptr, threadRoutine, this);
 }
@@ -53,9 +57,27 @@ void ActivityMonitorSingleton::updatePlayerStatus(PlayerStatus playerStatus) {
     m_monitorItem.m_playerStatus = playerStatus;
     m_monitorItem.m_timestamp = 0;
     pthread_mutex_unlock(&m_mutex);
+    APP_INFO("+++++++++++++++++++++++++++++++++++++++++++++++updatePlayerStatus:%d", playerStatus);
     updateJsonFile();
 }
+
+bool ActivityMonitorSingleton::isPlayerIdle() const {
+    return m_isIdle;
+}
+
+void ActivityMonitorSingleton::updateStatus() {
+    pthread_mutex_lock(&m_mutex);
+    if (m_monitorItem.m_playerStatus == PLAYER_STATUS_ON) {
+        m_isIdle = false;
+    } else {
+        m_isIdle = true;
+    }
+    pthread_mutex_unlock(&m_mutex);
+}
+
 void ActivityMonitorSingleton::updateJsonFile() {
+    APP_INFO("=============================1.updateJsonFile:status:%d content:%s time:%u",
+             m_monitorItem.m_playerStatus, m_prevWriteContent.c_str(), m_monitorItem.m_timestamp);
     pthread_mutex_lock(&m_mutex);
     std::string targetStr;
     if (m_monitorItem.m_playerStatus == PLAYER_STATUS_ON) {
@@ -68,6 +90,8 @@ void ActivityMonitorSingleton::updateJsonFile() {
         return;
     }
     m_prevWriteContent = targetStr;
+    APP_INFO("=============================2.updateJsonFile:status:%d content:%s time:%u",
+             m_monitorItem.m_playerStatus, m_prevWriteContent.c_str(), m_monitorItem.m_timestamp);
 
     rapidjson::Document document;
     document.SetObject();
@@ -99,10 +123,18 @@ void ActivityMonitorSingleton::addPairToDoc(rapidjson::Document& document,
 void* ActivityMonitorSingleton::threadRoutine(void *arg) {
     ActivityMonitorSingleton *instance = (ActivityMonitorSingleton *) arg;
     instance->updateJsonFile();
+
+    int val = MSECS_PER_MIN / MONITOR_INTERVAL_MSECS;
+    int counter = 0;
     while (instance->m_threadAlive) {
-        sleep(SECS_PER_MIN);
-        instance->m_monitorItem.m_timestamp++;
-        instance->updateJsonFile();
+        usleep(MONITOR_INTERVAL_MSECS);
+        instance->updateStatus();
+        counter++;
+        if (counter == val) {
+            counter = 0;
+            instance->m_monitorItem.m_timestamp++;
+            instance->updateJsonFile();
+        }
     }
     return nullptr;
 }

@@ -22,7 +22,7 @@ namespace duerOSDcsApp {
 namespace mediaPlayer {
 using application::ThreadPoolExecutor;
 
-#define PCM_BUFFER_LEN (1024 * 1024)
+#define PCM_BUFFER_LEN 256000
 #define WAIT_TIME_INTERVAL_MS 100000
 #define PLAY_INCREMENT_LEN 2048
 
@@ -102,13 +102,14 @@ void PcmTtsPlayerImpl::pushData(const char* data, unsigned int len) {
     }
 
     if (m_currentLen + len > m_spaceLen) {
-        char* tmp = (char*)malloc(m_spaceLen + PCM_BUFFER_LEN);
+        int incre_len = PCM_BUFFER_LEN / 4;
+        char* tmp = (char*)malloc(m_spaceLen + incre_len);
         memcpy(tmp, m_pcmBuffer, m_currentLen);
         pthread_mutex_lock(&m_memMutex);
         free(m_pcmBuffer);
         m_pcmBuffer = tmp;
         pthread_mutex_unlock(&m_memMutex);
-        m_spaceLen += PCM_BUFFER_LEN;
+        m_spaceLen += incre_len;
     }
 
     memcpy(m_pcmBuffer + m_currentLen, data, len);

@@ -245,7 +245,7 @@ Logger& getDcsSdkLoggerLogger();
             loggerInstance.log(level, entry, __LOG_FILENAME__, __LINE__, __FUNCTION__,room);     \
         }                                                                                        \
     } while (false)
-
+        
 #define LOGGER_ENABLE(enable) deviceCommonLib::logger::getDcsSdkLoggerLogger().setEnable(enable)
 
 #ifdef LOGGER_DEBUG_LOG_ENABLED

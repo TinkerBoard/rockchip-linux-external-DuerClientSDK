@@ -38,4 +38,4 @@ dlopen=''
 dlpreopen=''
 
 # Directory that this library needs to be installed in:
-libdir='/home/menglingfeng/work/rk3308/dcs-device-app/dcs-device-sdk/Rk3308_buildout/third/lib'
+libdir='/home/menglingfeng/dcs-device-app/dcs-device-sdk/Rk3308_buildout/third/lib'

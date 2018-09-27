@@ -57,7 +57,9 @@ DeviceIoWrapper::DeviceIoWrapper() : m_btPhoneConnectFlag{false},
                                      m_isRecognizing{false},
                                      m_isRecoveryingNetwork{false},
                                      m_sleepMode{false},
-                                     m_pauseBtnClicked{false} {
+                                     m_pauseBtnClicked{false},
+                                     m_lowVolumeFlag(true),
+                                     m_eqInitFlag(false) {
     DeviceIo::getInstance()->setNotify(this);
     m_btTransBuffer = (char *)malloc(sizeof(char) * BT_TRANS_CHUNK_SIZE);
     s_destroyOnce = PTHREAD_ONCE_INIT;
@@ -236,6 +238,7 @@ void DeviceIoWrapper::callback(DeviceInput event, void *data, int len) {
         case DeviceInput::KEY_ONE_LONG:
         case DeviceInput::KEY_ENTER_AP:
             if (m_isRecoveryingNetwork) {
+                setRecoveryingNetwork(false);
                 DuerLinkWrapper::getInstance()->stopNetworkRecovery();
                 break;
             }
@@ -471,9 +474,20 @@ int DeviceIoWrapper::getCurrentVolume() const {
 }
 
 void DeviceIoWrapper::setCurrentVolume(int current_volume) {
+    initializeEQ();
     current_volume = std::max(current_volume, MIN_USER_VOLUME);
     current_volume = std::min(current_volume, MAX_USER_VOLUME);
     APP_INFO("%s, current_volume: %d\n", __func__, current_volume);
+
+    bool currIsLow = current_volume >= 90 ? false : true;
+    if (currIsLow != m_lowVolumeFlag) {
+        if (m_lowVolumeFlag && !currIsLow) {
+            system("sh /oem/scripts/rk3308_ti5733_config_high_vol_pa.sh");
+        } else {
+            system("sh /oem/scripts/rk3308_ti5733_config_low_vol_pa.sh");
+        }
+    }
+    m_lowVolumeFlag = currIsLow;
 
     if(isBluetoothOpen())
         btSetVolume(current_volume);
@@ -484,7 +498,6 @@ void DeviceIoWrapper::setCurrentVolume(int current_volume) {
 						TTS_PLAYBACK_TRACK_ID |
 						RAPID_PLAYBACK_TRACK_ID |
 						NATTS_PLAYBACK_TRACK_ID));
-
     ledVolume();
     volumeChanged();
 }
@@ -624,13 +637,13 @@ void DeviceIoWrapper::btPlayNext() {
 }
 
 std::string DeviceIoWrapper::getDeviceId() {
-#if (defined RaspberryPi) || (defined Hodor) || (defined Kuke) || (defined Dot) || (defined Box86)
     char sn[32] = {0};
-    DeviceIo::getInstance()->getSn(sn);
-    return std::string(sn);
-#else
-    return Configuration::getInstance()->getDeviceId();
-#endif
+
+    if (DeviceIo::getInstance()->getSn(sn)) {
+        return std::string(sn);
+    } else {
+        return Configuration::getInstance()->getDeviceId();
+    }
 }
 
 std::string DeviceIoWrapper::getDeviceVersion() {
@@ -821,7 +834,7 @@ std::string DeviceIoWrapper::getlocalName() {
 }
 
 void DeviceIoWrapper::OnNetworkReady() {
-    DeviceIo::getInstance()->OnNetworkReady();
+    return;
 }
 
 bool DeviceIoWrapper::isRecognizing() const {
@@ -857,7 +870,8 @@ void DeviceIoWrapper::enterSleepMode(bool isLedLightOn) {
     }
     setSleepMode(true);
     if (m_applicationManager) {
-        m_applicationManager->microphoneOff();
+	    m_applicationManager->setMicrophoneStatus(false);
+        //m_applicationManager->microphoneOff();
     }
     if (!m_pauseBtnClicked) {
         m_applicationManager->forceHoldFocus(true);
@@ -875,7 +889,8 @@ void DeviceIoWrapper::exitSleepMode() {
     ledUnSleepMode();
     setSleepMode(false);
     if (m_applicationManager) {
-        m_applicationManager->microphoneOn();
+	    m_applicationManager->setMicrophoneStatus(true);
+        //m_applicationManager->microphoneOn();
     }
     if (!m_pauseBtnClicked) {
         m_applicationManager->forceHoldFocus(false);
@@ -912,9 +927,24 @@ void DeviceIoWrapper::timeToTenMinutes() {
     }
 }
 
+void DeviceIoWrapper::initializeEQ() {
+    if (!m_eqInitFlag) {
+        int volume = getCurrentVolume();
+        m_lowVolumeFlag = volume >= 90 ? false : true;
+        if (m_lowVolumeFlag) {
+            system("sh /oem/scripts/rk3308_ti5733_config_low_vol_pa.sh");
+        } else {
+            system("sh /oem/scripts/rk3308_ti5733_config_high_vol_pa.sh");
+        }
+        m_eqInitFlag = true;
+    }
+}
+
+#ifdef SUPPORT_INFRARED
 int DeviceIoWrapper::transmitInfrared(std::string &infraredCode) {
     return DeviceIo::getInstance()->transmitInfrared(infraredCode);
 }
+#endif
 
 bool DeviceIoWrapper::isPauseBtnClicked() const {
     return m_pauseBtnClicked;
@@ -930,17 +960,11 @@ void DeviceIoWrapper::handlePlayAndPause() {
         if (m_applicationManager) {
             m_applicationManager->forceHoldFocus(true);
         }
-
-        if(isBluetoothOpen())
-            btPausePlay();
     } else {
         setPauseBtnFlag(false);
         if (m_applicationManager) {
             m_applicationManager->forceHoldFocus(false);
         }
-
-        if(isBluetoothOpen())
-            btResumePlay();
     }
 }
 

@@ -145,7 +145,7 @@ void ApplicationManager::onSpeechAsrCanceled() {
 }
 
 void ApplicationManager::setSpeakerVolume(int64_t volume) {
-    APP_INFO("ApplicationManager setSpeakerVolume: %ld", volume);
+    APP_INFO("ApplicationManager setSpeakerVolume: %lld", volume);
     DeviceIoWrapper::getInstance()->setCurrentVolume((unsigned int)volume);
     Configuration::getInstance()->setCommVol((unsigned int)volume);
 }
@@ -170,6 +170,7 @@ bool ApplicationManager::getSpeakerMuteStatus() {
     return DeviceIoWrapper::getInstance()->isMute();
 }
 
+#ifdef SUPPORT_DEBUGGER
 bool ApplicationManager::setStartDebugMode() {
     APP_INFO("ApplicationManager setStartDebug");
     LOGGER_ENABLE(true);
@@ -211,6 +212,7 @@ void ApplicationManager::debugStoped() {
         m_dcsSdk->debugStoped();
     }
 }
+#endif
 
 void ApplicationManager::setBluetoothStatus(bool status) {
     if (status) {
@@ -223,6 +225,17 @@ void ApplicationManager::setBluetoothStatus(bool status) {
 }
 
 void ApplicationManager::setMicrophoneStatus(bool status) {
+    if (!status) {
+	    if (m_dcsSdk) {
+		    m_dcsSdk->enterSleepMode();
+            DeviceIoWrapper::getInstance()->setSleepMode(true);
+		}
+	} else {
+        if (m_dcsSdk) {
+            m_dcsSdk->enterWakeupMode();
+            DeviceIoWrapper::getInstance()->setSleepMode(false);
+        }
+    }
 #if (defined Hodor) || (defined Kuke) || (defined Dot) || (defined Box86)
     if (!status) {
         APP_INFO("ApplicationManager setMicrophoneStatus: enterSleepMode");
@@ -303,9 +316,6 @@ void ApplicationManager::informSdkConnectionStatus(duerOSDcsSDK::sdkInterfaces::
         break;
 
     case duerOSDcsSDK::sdkInterfaces::SdkConnectionState::SDK_CONNECT_SUCCEED:
-        int bt_is_opened, ble_is_opened;
-        framework::BtControlType type;
-
         APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_CONNECT_SUCCEED");
         if (DuerLinkWrapper::getInstance()->isFirstNetworkReady() || DuerLinkWrapper::getInstance()->isFromConfigNetwork()) {
             APP_INFO("ApplicationManager informSdkConnectionStatus: SDK_CONNECT_SUCCEED networkLinkOrRecoverySuccess");
@@ -314,24 +324,6 @@ void ApplicationManager::informSdkConnectionStatus(duerOSDcsSDK::sdkInterfaces::
             DuerLinkWrapper::getInstance()->setFirstNetworkReady(false);
             /// because app is working no notify network link, but after config network must notify
             DuerLinkWrapper::getInstance()->setFromConfigNetwork(false);
-
-            ble_is_opened = framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BLE_IS_OPENED);
-            if(ble_is_opened) {
-                APP_DEBUG("Close ble wifi config server.");
-                framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BLE_CLOSE_SERVER);
-            }
-
-            type = framework::BtControlType::BT_AUDIO_PLAY;
-            framework::DeviceIo::getInstance()->controlBt(framework::BtControl::SET_BT_CONTROL_TYPE, &type);
-
-            bt_is_opened = framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BT_IS_OPENED);
-            if(!bt_is_opened) {
-                APP_DEBUG("Open bluetooth.");
-                framework::DeviceIo::getInstance()->controlBt(framework::BtControl::BT_OPEN);
-            }
-
-            APP_DEBUG("Open a2dp sink.");
-            framework::DeviceIo::getInstance()->controlBt(framework::BtControl::A2DP_SINK_OPEN);
         }
 
         break;
@@ -387,7 +379,6 @@ bool ApplicationManager::systemInformationGetStatus(duerOSDcsSDK::sdkInterfaces:
 
 bool ApplicationManager::systemInformationHardReset() {
     APP_INFO("ApplicationManager systemInformationHardReset");
-    DeviceIoWrapper::getInstance()->setTouchStartNetworkConfig(true);
 #ifdef Box86
     DuerLinkWrapper::getInstance()->waitLogin();
     DuerLinkWrapper::getInstance()->setFromConfigNetwork(true);
@@ -420,6 +411,7 @@ std::string ApplicationManager::getWifiBssid() {
     return DeviceIoWrapper::getInstance()->getWifiBssid();
 }
 
+#ifdef SUPPORT_INFRARED
 bool ApplicationManager::sendInfraredRayCodeRequest(int carrierFrequency, const std::string &pattern) {
     std::string carrierFrequencyStr = deviceCommonLib::deviceTools::convertToString(carrierFrequency);
     carrierFrequencyStr += ",";
@@ -427,6 +419,7 @@ bool ApplicationManager::sendInfraredRayCodeRequest(int carrierFrequency, const 
     APP_INFO("ApplicationManager send Infrared Ray Code Request: %s", carrierFrequencyStr.c_str());
     return 0 == DeviceIoWrapper::getInstance()->transmitInfrared(carrierFrequencyStr);
 }
+#endif
 
 void ApplicationManager::setDcsSdk(std::shared_ptr<duerOSDcsSDK::sdkInterfaces::DcsSdk> dcsSdk) {
     m_dcsSdk = dcsSdk;

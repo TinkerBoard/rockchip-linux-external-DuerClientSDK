@@ -11,6 +11,11 @@
 #include "network_status_observer.h"
 #include "duer_link_received_data_observer.h"
 #include "duer_link_device_connection_status_observer.h"
+#include "duer_link_tcp_connection_observer.h"
+#include "duer_link_dlp_cloud_received_observer.h"
+#include "duer_link_http2_connection_observer.h"
+#include "duer_link_http2_con_factory_interface.h"
+
 namespace duerLink {
 
 //配网
@@ -45,7 +50,8 @@ public:
                                        std::string devicedID,
                                        std::string interface = "",
                                        std::string bdussfile = "/data/duer/budss.txt",
-                                       std::string appID = "Bd9rtoM39XmYIesLpaAVX19jBAcF4gWq");
+                                       std::string appID = "Bd9rtoM39XmYIesLpaAVX19jBAcF4gWq",
+                                       std::string snID = "91201/16000xxxx");
 
     /**
     * 设置配网回调
@@ -153,7 +159,27 @@ public:
     bool get_all_connection_id(std::vector<int>& id_array);
 
     //group interface::loudspeaker control devices
+    /**
+    * set access token observer
+    * @param config_listener observer
+    **/
+    void set_access_token_observer(AccessTokenObserver* token_listener);
 
+    /**
+    * refresh access token
+    **/
+    void refresh_access_token();
+
+    /**
+    * refresh dumiId
+    **/
+    void refresh_dumiId();
+
+    /*
+     *The following interface is the speaker control TV interface, until End of them, if there is a need,
+     *Please add macros in the compilation script, if there is no relevant requirements,
+     *Please do not call them
+     * */
     bool set_device_connection_status_observer(DuerLinkDeviceConnectionStatusObserver* observer);
 
     /**
@@ -193,32 +219,33 @@ public:
     bool get_curret_connect_device_info(std::string& client_id,
                                         std::string& device_id,
                                         device_type device_type_value);
-
-    /**
-    * set access token observer
-    * @param config_listener observer
-    **/
-    void set_access_token_observer(AccessTokenObserver* token_listener);
-
-    /**
-    * refresh access token
-    **/
-    void refresh_access_token();
-
-    /**
-    * refresh dumiId
-    **/
-    void refresh_dumiId();
-
     /**
     * get operation type.
     **/
     void get_operation_type();
     
     /**
+    * set dlp connection object.
+    **/
+    void set_dlp_http2_connection_object(DuerLinkHttp2ConnectionObserver* observer);
+
+    /**
     * set wirtable file path.
     **/
     void set_writable_file_path(std::string& file_path);
+
+    /**
+    * set http2 connection factory interface.
+    **/
+    void set_dlp_http2_con_factory_interface(DuerLinkHttpConFactoryInterface* observer);
+
+    /**
+     * set local tcp socket op function
+     * */
+    void set_tcp_connection_observer(DuerLinkTcpConnectionObserver* observer);
+    /*
+     *  End of the speaker control TV interface.
+     *  */
 private:
     duerLinkSdk();
     virtual ~duerLinkSdk();

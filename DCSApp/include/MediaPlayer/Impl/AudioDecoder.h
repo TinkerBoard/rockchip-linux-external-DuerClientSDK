@@ -32,6 +32,8 @@ extern "C"
 namespace duerOSDcsApp {
 namespace mediaPlayer {
 
+#define FIX_READ_SIZE 512
+
 enum StreamReadResult {
     READ_SUCCEED,
     READ_FAILED,
@@ -59,27 +61,15 @@ public:
 
 private:
     DecodeMode m_decodeMode;
-    AVFormatContext* m_formatCtx;
-    AVCodecContext* m_codecCtx;
-    AVPacket* m_packet;
-    AVFrame* m_frame;
+    FILE* m_fp;
+    char m_buffer[FIX_READ_SIZE];
     unsigned int m_repeatTimes;
     unsigned int m_currentTimes;
-    struct SwrContext* m_convertCtx;
-    unsigned int m_outputChannel;
-    unsigned int m_outputSamplerate;
-    unsigned int m_bytesPersample;
-    const AVSampleFormat c_outputFmt;
 
 private:
     AudioDecoder(const AudioDecoder&);
 
     AudioDecoder& operator=(const AudioDecoder&);
-
-    unsigned int calculateResampleSize(int frameSize,
-                                       int inSampleRate, int outSampleRate,
-                                       int inChannel, int outChannel,
-                                       int inFmt, int outFmt);
 };
 
 }  // mediaPlayer

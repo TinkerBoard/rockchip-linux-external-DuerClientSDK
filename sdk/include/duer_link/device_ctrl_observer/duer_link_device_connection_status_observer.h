@@ -10,7 +10,8 @@
 
 class DuerLinkDeviceConnectionStatusObserver {
 public:
-    virtual void NotifyConnectionStatusChange(duerLink::device_connection_status status,duerLink::device_type type) = 0;
+    virtual void notify_connection_status_change(
+            duerLink::device_connection_status status,duerLink::device_type type) = 0;
 };
 
 #endif //DUER_LINK_DEVICE_CONNECTION_STATUS_OBSERVER_H

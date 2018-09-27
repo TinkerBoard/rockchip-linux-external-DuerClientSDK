@@ -40,6 +40,8 @@ public:
      *
      */
     virtual void timeIsUp(Timer* timer) = 0;
+
+    virtual ~TimerNotify() = default;
 };
 
 class Timer {

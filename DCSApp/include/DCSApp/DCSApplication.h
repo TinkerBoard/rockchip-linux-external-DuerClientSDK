@@ -24,9 +24,6 @@
 #include "SystemUpdateRevWrapper.h"
 #include "DeviceTools/DyLibrary.h"
 #include "DCSKeyHandler.h"
-#ifdef Build_CrabSdk
-#include "crab_sdk.h"
-#endif
 
 namespace duerOSDcsApp {
 namespace application {
@@ -59,16 +56,6 @@ public:
      * \endif
      */
     void run();
-
-    bool isPlayerRunning();
-
-    bool isBusy();
-    
-    static void enterSleepMode();
-
-    static void enterWakeupMode();
-
-    static bool recordingStatus();
 
 private:
     /**
@@ -135,6 +122,13 @@ private:
      */
     void detectNTPReady();
 
+#ifdef ENABLE_VAD
+
+    unsigned int read_pid_process();
+
+    unsigned int read_voice_inactive_frames();
+#endif
+
     /**
      * \if english
      *     @brief microphone record data callback.
@@ -193,9 +187,8 @@ private:
     */
     std::shared_ptr<deviceCommonLib::deviceTools::DyLibrary> m_audioDyLib;
 
-	duerOSDcsSDK::sdkInterfaces::DcsSdkParameters parameters;
-
-    std::unique_ptr<DCSKeyHandler> m_keyHandler;
+	std::unique_ptr<DCSKeyHandler> m_keyHandler;
+    duerOSDcsSDK::sdkInterfaces::DcsSdkParameters parameters;
 };
 
 }  // namespace application

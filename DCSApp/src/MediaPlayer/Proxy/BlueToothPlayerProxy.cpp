@@ -52,7 +52,6 @@ void BlueToothPlayerProxy::setObserver(
 LocalMediaPlayerStatus BlueToothPlayerProxy::play(const LocalMediaPlayerName& name) {
     APP_INFO("BlueToothPlayerProxy play");
     m_localMediaPlayerPlayActivity = PLAYING;
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     if (BLUETOOTH == name) {
         if (m_bluetoothImpl) {
             m_bluetoothImpl->play();
@@ -62,14 +61,12 @@ LocalMediaPlayerStatus BlueToothPlayerProxy::play(const LocalMediaPlayerName& na
             m_dlnaImpl->play();
         }
     }
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
     return LocalMediaPlayerStatus::LOCAL_MEDIA_PLAYER_SUCCESS;
 }
 
 LocalMediaPlayerStatus BlueToothPlayerProxy::stop(const LocalMediaPlayerName& name) {
     APP_INFO("BlueToothPlayerProxy stop");
     m_localMediaPlayerPlayActivity = STOPPED;
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     if (name == BLUETOOTH) {
         if (m_bluetoothImpl) {
             m_bluetoothImpl->stop();
@@ -102,7 +99,6 @@ LocalMediaPlayerStatus BlueToothPlayerProxy::stop(const LocalMediaPlayerName& na
 LocalMediaPlayerStatus BlueToothPlayerProxy::pause(const LocalMediaPlayerName& name) {
     APP_INFO("BlueToothPlayerProxy pause");
     m_localMediaPlayerPlayActivity = PAUSED;
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     if (BLUETOOTH == name) {
         if (m_bluetoothImpl) {
             m_bluetoothImpl->pause();
@@ -119,7 +115,6 @@ LocalMediaPlayerStatus BlueToothPlayerProxy::pause(const LocalMediaPlayerName& n
 LocalMediaPlayerStatus BlueToothPlayerProxy::resume(const LocalMediaPlayerName& name) {
     APP_INFO("BlueToothPlayerProxy resume");
     m_localMediaPlayerPlayActivity = PLAYING;
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     if (BLUETOOTH == name) {
         if (m_bluetoothImpl) {
             m_bluetoothImpl->resume();
@@ -136,7 +131,6 @@ LocalMediaPlayerStatus BlueToothPlayerProxy::resume(const LocalMediaPlayerName& 
 LocalMediaPlayerStatus BlueToothPlayerProxy::playNext(const LocalMediaPlayerName& name) {
     APP_INFO("BlueToothPlayerProxy playNext");
     m_localMediaPlayerPlayActivity = PLAYING;
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     if (BLUETOOTH == name) {
         if (m_bluetoothImpl) {
             m_bluetoothImpl->playNext();
@@ -153,7 +147,6 @@ LocalMediaPlayerStatus BlueToothPlayerProxy::playNext(const LocalMediaPlayerName
 LocalMediaPlayerStatus BlueToothPlayerProxy::playPrevious(const LocalMediaPlayerName& name) {
     APP_INFO("BlueToothPlayerProxy playPrevious");
     m_localMediaPlayerPlayActivity = PLAYING;
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     if (BLUETOOTH == name) {
         if (m_bluetoothImpl) {
             m_bluetoothImpl->playPrevious();
@@ -169,7 +162,6 @@ LocalMediaPlayerStatus BlueToothPlayerProxy::playPrevious(const LocalMediaPlayer
 
 void BlueToothPlayerProxy::dlnaStartPlay() {
     APP_INFO("BlueToothPlayerProxy dlnaStartPlay11111");
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     if (m_playerObserver) {
         LocalMediaPlayerPlayInfo playInfo;
         playInfo.m_playerActivity = PLAYING;
@@ -193,7 +185,6 @@ void BlueToothPlayerProxy::dlnaStartPlay() {
 
 void BlueToothPlayerProxy::dlnaStopPlay() {
     APP_INFO("BlueToothPlayerProxy dlnaStopPlay");
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     if (m_playerObserver) {
         LocalMediaPlayerPlayInfo playInfo;
 
@@ -222,7 +213,6 @@ void BlueToothPlayerProxy::dlnaStopPlay() {
 
 void BlueToothPlayerProxy::dlnaPausePlay() {
     APP_INFO("BlueToothPlayerProxy dlnaPausePlay");
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     if (m_playerObserver) {
         LocalMediaPlayerPlayInfo playInfo;
 
@@ -252,7 +242,6 @@ void BlueToothPlayerProxy::dlnaPausePlay() {
 void BlueToothPlayerProxy::btStartPlay() {
     APP_INFO("BlueToothPlayerProxy btStartPlay");
     application::DeviceIoWrapper::deviceioWrapperBtSoundPlayFinished();
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_START;
     if (m_playerObserver) {
         LocalMediaPlayerPlayInfo playInfo;
         playInfo.m_playerActivity = PLAYING;
@@ -276,7 +265,6 @@ void BlueToothPlayerProxy::btStartPlay() {
 
 void BlueToothPlayerProxy::btStopPlay() {
     APP_INFO("BlueToothPlayerProxy btStopPlay");
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     if (m_playerObserver) {
         LocalMediaPlayerPlayInfo playInfo;
 

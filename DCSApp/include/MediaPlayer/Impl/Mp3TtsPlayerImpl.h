@@ -17,6 +17,7 @@
 #ifndef DUEROS_DCSAPP_INCLUDE_MEDIAPLAYER_MP3TTSPLAYERIMPL_H_
 #define DUEROS_DCSAPP_INCLUDE_MEDIAPLAYER_MP3TTSPLAYERIMPL_H_
 
+#include <DcsSdk/PlayerAvtivityObserver.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,12 +43,15 @@ extern "C"
 
 namespace duerOSDcsApp {
 namespace mediaPlayer {
+using duerOSDcsSDK::sdkInterfaces::PlayerAvtivityObserver;
 
 class Mp3TtsPlayerImpl : public Mp3TtsPlayerInterface {
 public:
     Mp3TtsPlayerImpl(const std::string& audio_dev);
 
     ~Mp3TtsPlayerImpl();
+
+    void setPlayerObserver(PlayerAvtivityObserver* observer);
 
     void registerListener(std::shared_ptr<TtsPlayerListener> notify) override;
 
@@ -97,6 +101,7 @@ private:
     bool m_removeHeadFlag;
     bool m_logCtlFlag;
     bool m_aliveFlag;
+    PlayerAvtivityObserver* m_observer;
 };
 
 }  // namespace mediaPlayer

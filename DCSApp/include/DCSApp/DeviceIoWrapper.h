@@ -256,11 +256,17 @@ public:
 
     void timeToTenMinutes();
 
+    void initializeEQ();
+
+#ifdef SUPPORT_INFRARED
     int transmitInfrared(std::string& infraredCode);
+#endif
 
     bool isPauseBtnClicked() const;
 
     void OnNetworkReady();
+
+    void setSleepMode(bool isSleepMode);
 
 private:
     DeviceIoWrapper();
@@ -287,8 +293,6 @@ private:
     void handleSliderSlide(int incre);
 
     static void staticFunc(void *arg);
-
-    void setSleepMode(bool isSleepMode);
 
     void setPauseBtnFlag(bool flag);
 
@@ -337,6 +341,10 @@ private:
     bool m_sleepMode;
 
     bool m_pauseBtnClicked;
+    
+    bool m_lowVolumeFlag;
+    
+    bool m_eqInitFlag;
 };
 
 }  // namespace application

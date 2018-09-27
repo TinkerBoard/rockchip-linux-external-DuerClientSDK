@@ -125,8 +125,8 @@ extern "C" {
 
 #if !(defined(VMS) || defined(__VMS)) /* VMS uses logical names instead */
 #if defined(HEADER_CRYPTLIB_H) && !defined(OPENSSLDIR)
-#define ENGINESDIR "/home/menglingfeng/work/rk3308/dcs-device-app/dcs-device-sdk/Rk3308_buildout/third/lib/engines"
-#define OPENSSLDIR "/home/menglingfeng/work/rk3308/dcs-device-app/dcs-device-sdk/Rk3308_buildout/third/build/ssl"
+#define ENGINESDIR "/home/menglingfeng/dcs-device-app/dcs-device-sdk/Rk3308_buildout/third/lib/engines"
+#define OPENSSLDIR "/home/menglingfeng/dcs-device-app/dcs-device-sdk/Rk3308_buildout/third/build/ssl"
 #endif
 #endif
 

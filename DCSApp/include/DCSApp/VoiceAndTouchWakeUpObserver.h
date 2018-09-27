@@ -44,10 +44,9 @@ public:
             std::string keyword,
             uint64_t beginIndex,
             uint64_t endIndex) override;
+
     void onLocationDetected(
             int location) override;
-
-    void printInfo() override;
 
     void touchStartAsr() override;
 

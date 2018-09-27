@@ -47,12 +47,33 @@ if(BUILD_CRAB_SDK)
     add_definitions(-DBuild_CrabSdk)
 endif()
 
+if(BUILD_WITHOUT_SQLITE3)
+    add_definitions(-DBUILD_WITHOUT_SQLITE3)
+endif()
 if(DUERLINK_V2)
     add_definitions("-DDUERLINK_V2")
 endif()
 
+if(BDSAI_KEY_WORD_DETECTOR)
+    add_definitions("-DBDSAI_KEY_WORD_DETECTOR")
+endif()
+
+if(BUILD_DCS_EVENT)
+    add_definitions("-DSUPPORT_DCS_EVENT")
+endif()
+
+if(ENABLE_PCM_FORMAT)
+    add_definitions("-DENABLE_PCM_FORMAT")
+endif()
+
+if(BUILD_DEBUGGER)
+    add_definitions("-DSUPPORT_DEBUGGER")
+endif()
+
+if(BUILD_INFRARED)
+    add_definitions("-DSUPPORT_INFRARED")
+endif()
 add_subdirectory("DCSApp")
-add_subdirectory("SocketApp")
 add_subdirectory("Framework")
 add_subdirectory("appresources")
 

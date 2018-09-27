@@ -19,11 +19,7 @@
 namespace duerOSDcsApp {
 namespace mediaPlayer {
 
-#if defined (MTK8516) || defined (Rk3308)
 #define ALSA_MAX_BUFFER_TIME 500000
-#else
-#define ALSA_MAX_BUFFER_TIME 80000
-#endif
 
 AlsaController::AlsaController(const std::string& audio_dev) : m_pcmHandle(nullptr),
                                                                m_lock(nullptr),

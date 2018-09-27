@@ -80,83 +80,83 @@ void SoundController::audioPlay(const std::string &source,
 }
 
 void SoundController::wakeUp() {
-    audioPlay("./appresources/du.mp3", false, NULL, NULL, NULL);
+    audioPlay("./appresources/du.pcm", false, NULL, NULL, NULL);
 }
 
 void SoundController::linkStartFirst() {
-    audioPlay("./appresources/link_start_first.mp3", true, NULL, NULL, NULL);
+    audioPlay("./appresources/link_start_first.pcm", true, NULL, NULL, NULL);
 }
 
 void SoundController::linkStart() {
-    audioPlay("./appresources/link_start.mp3", true, NULL, NULL, NULL);
+    audioPlay("./appresources/link_start.pcm", true, NULL, NULL, NULL);
 }
 
 void SoundController::linkConnecting() {
-    audioPlay("./appresources/link_connecting.mp3", true, NULL, NULL, NULL);
+    audioPlay("./appresources/link_connecting.pcm", true, NULL, NULL, NULL);
 }
 
 void SoundController::linkSuccess(void(*callback)()) {
-    audioPlay("./appresources/link_success.mp3", true, NULL, NULL, callback);
+    audioPlay("./appresources/link_success.pcm", true, NULL, NULL, callback);
 }
 
 void SoundController::linkFailedPing(void(*callback)()) {
-    audioPlay("./appresources/link_failed_ping.mp3", true, NULL, NULL, NULL);
+    audioPlay("./appresources/link_failed_ping.pcm", true, NULL, NULL, NULL);
 }
 
 void SoundController::linkFailedIp(void(*callback)()) {
-    audioPlay("./appresources/link_failed_ip.mp3", true, NULL, NULL, callback);
+    audioPlay("./appresources/link_failed_ip.pcm", true, NULL, NULL, callback);
 }
 
 void SoundController::linkExit(void(*callback)()) {
-    audioPlay("./appresources/link_exit.mp3", true, NULL, NULL, callback);
+    audioPlay("./appresources/link_exit.pcm", true, NULL, NULL, callback);
 }
 
 void SoundController::reLink() {
-    audioPlay("./appresources/re_link.mp3", true, NULL, NULL, NULL);
+    audioPlay("./appresources/re_link.pcm", true, NULL, NULL, NULL);
 }
 
 void SoundController::reLinkSuccess(void(*callback)()) {
-    audioPlay("./appresources/re_link_success.mp3", true, NULL, NULL, callback);
+    audioPlay("./appresources/re_link_success.pcm", true, NULL, NULL, callback);
 }
 
 void SoundController::reLinkFailed() {
-    audioPlay("./appresources/re_link_failed.mp3", true, NULL, NULL, NULL);
+    audioPlay("./appresources/re_link_failed.pcm", true, NULL, NULL, NULL);
 }
 
 void SoundController::btUnpaired() {
-    audioPlay("./appresources/bt_unpaired.mp3", true, NULL, NULL, NULL);
+    audioPlay("./appresources/bt_unpaired.pcm", true, NULL, NULL, NULL);
 }
 
 void SoundController::btPairSuccess(void(*callback)()) {
-    audioPlay("./appresources/bt_pair_success.mp3", true, NULL, NULL, callback);
+    audioPlay("./appresources/bt_pair_success.pcm", true, NULL, NULL, callback);
 }
 
 void SoundController::btPairFailedPaired() {
-    audioPlay("./appresources/bt_pair_failed_paired.mp3", true, NULL, NULL, NULL);
+    audioPlay("./appresources/bt_pair_failed_paired.pcm", true, NULL, NULL, NULL);
 }
 
 void SoundController::btPairFailedOther() {
-    audioPlay("./appresources/bt_pair_failed_other.mp3", true, NULL, NULL, NULL);
+    audioPlay("./appresources/bt_pair_failed_other.pcm", true, NULL, NULL, NULL);
 }
 
 void SoundController::btDisconnect(void(*callback)()) {
-    audioPlay("./appresources/bt_disconnect.mp3", true, NULL, NULL, callback);
+    audioPlay("./appresources/bt_disconnect.pcm", true, NULL, NULL, callback);
 }
 
 void SoundController::networkConnectFailed() {
-    audioPlay("./appresources/network_connect_failed.mp3", true, NULL, NULL, NULL);
+    audioPlay("./appresources/network_connect_failed.pcm", true, NULL, NULL, NULL);
 }
 
 void SoundController::networkSlow() {
-    audioPlay("./appresources/network_slow.mp3", true, NULL, NULL, NULL);
+    audioPlay("./appresources/network_slow.pcm", true, NULL, NULL, NULL);
 }
 
 void SoundController::openBluetooth(void(*callback)(void *arg), void *arg) {
-    audioPlay("./appresources/open_bluetooth.mp3", true, callback, arg, NULL);
+    audioPlay("./appresources/open_bluetooth.pcm", true, callback, arg, NULL);
 }
 
 void SoundController::closeBluetooth(void(*callback)(void *arg), void *arg) {
-    audioPlay("./appresources/close_bluetooth.mp3", true, callback, arg, NULL);
+    audioPlay("./appresources/close_bluetooth.pcm", true, callback, arg, NULL);
 }
 
 void SoundController::volume() {
@@ -174,27 +174,27 @@ void SoundController::playTts(const std::string& content, bool needFocus, void (
 }
 
 void SoundController::serverConnecting() {
-    audioPlay("./appresources/server_connecting.mp3", false, NULL, NULL, NULL);
+    audioPlay("./appresources/server_connecting.pcm", false, NULL, NULL, NULL);
 }
 
 void SoundController::serverConnectFailed() {
-    audioPlay("./appresources/server_connect_failed.mp3", false, NULL, NULL, NULL);
+    audioPlay("./appresources/server_connect_failed.pcm", false, NULL, NULL, NULL);
 }
 
 void SoundController::bleNetworkConfig() {
-    audioPlay("./appresources/ble_network_config.mp3", false, NULL, NULL, NULL);
+    audioPlay("./appresources/ble_network_config.pcm", false, NULL, NULL, NULL);
 }
 
 void SoundController::accountUnbound(void(*callback)()) {
-    audioPlay("./appresources/unbound.mp3", true, NULL, NULL, callback);
+    audioPlay("./appresources/unbound.pcm", true, NULL, NULL, callback);
 }
 
 void SoundController::hotConnected() {
-    audioPlay("./appresources/hot_connected.mp3", false, NULL, NULL, NULL);
+    audioPlay("./appresources/hot_connected.pcm", false, NULL, NULL, NULL);
 }
 
 void SoundController::waitLogin() {
-    audioPlay("./appresources/wait_login.mp3", false, NULL, NULL, NULL);
+    audioPlay("./appresources/wait_login.pcm", false, NULL, NULL, NULL);
 }
 
 }  // namespace application

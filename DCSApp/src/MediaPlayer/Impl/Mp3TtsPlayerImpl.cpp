@@ -15,12 +15,14 @@
  */
 
 #include <unistd.h>
+#include "DCSApp/DeviceIoWrapper.h"
 #include <LoggerUtils/DcsSdkLogger.h>
 #include "Mp3TtsPlayerImpl.h"
 
 namespace duerOSDcsApp {
 namespace mediaPlayer {
 using application::ThreadPoolExecutor;
+using application::DeviceIoWrapper;
 
 #define FINISH_READ_FLAG -1
 #define AVIO_CTX_BUFFER_SIZE 512
@@ -42,10 +44,11 @@ Mp3TtsPlayerImpl::Mp3TtsPlayerImpl(const std::string& audio_dev) : m_executor(nu
     m_isFirstPacket(true),
     m_removeHeadFlag(false),
     m_logCtlFlag(true),
-    m_aliveFlag(true) {
+    m_aliveFlag(true), 
+    m_observer(NULL) {
     m_executor = ThreadPoolExecutor::getInstance();
     m_alsaCtl = new AlsaController(audio_dev);
-    m_alsaCtl->init(48000, 1);
+    m_alsaCtl->init(24000, 1);
     m_pcmResampleBuf = (uint8_t*)av_malloc(RESAMPLE_BUFFER_SIZE);
     pthread_mutex_init(&m_playMutex, nullptr);
     pthread_cond_init(&m_playCond, nullptr);
@@ -81,6 +84,10 @@ Mp3TtsPlayerImpl::~Mp3TtsPlayerImpl() {
 
     pthread_mutex_destroy(&m_playMutex);
     pthread_cond_destroy(&m_playCond);
+}
+
+void Mp3TtsPlayerImpl::setPlayerObserver(PlayerAvtivityObserver* observer) {
+    m_observer = observer;
 }
 
 void Mp3TtsPlayerImpl::registerListener(std::shared_ptr<TtsPlayerListener> listener) {
@@ -125,6 +132,10 @@ void Mp3TtsPlayerImpl::ttsStop() {
 }
 
 void Mp3TtsPlayerImpl::executePlaybackStarted() {
+    if (m_observer) {
+        m_observer->playStart(DeviceIoWrapper::getInstance()->getCurrentVolume());
+    }
+
     m_executor->submit([this]() {
         size_t size = m_listeners.size();
 
@@ -137,6 +148,10 @@ void Mp3TtsPlayerImpl::executePlaybackStarted() {
 }
 
 void Mp3TtsPlayerImpl::executePlaybackStopped() {
+    if (m_observer) {
+        m_observer->playEnd(0);
+    }
+
     size_t size = m_listeners.size();
 
     for (size_t i = 0; i < size; ++i) {
@@ -154,7 +169,8 @@ void* Mp3TtsPlayerImpl::playFunc(void* arg) {
         pthread_cond_wait(&player->m_playCond, &player->m_playMutex);
 
         player->m_avioBuf = (uint8_t*) av_mallocz(AVIO_CTX_BUFFER_SIZE);
-        AVInputFormat* inputFormat = nullptr;
+        //AVInputFormat* inputFormat = nullptr;
+        AVInputFormat* inputFormat = av_find_input_format("mp3");
         AVIOContext* avio_ctx = avio_alloc_context(player->m_avioBuf,
                                 AVIO_CTX_BUFFER_SIZE,
                                 0,
@@ -163,10 +179,10 @@ void* Mp3TtsPlayerImpl::playFunc(void* arg) {
                                 nullptr,
                                 nullptr);
 
-        if (av_probe_input_buffer(avio_ctx, &inputFormat, "", nullptr, 0, 0) < 0) {
+        /*if (av_probe_input_buffer(avio_ctx, &inputFormat, "", nullptr, 0, 0) < 0) {
             pthread_mutex_unlock(&player->m_playMutex);
             continue;
-        }
+        }*/
 
         AVFormatContext* fmt_ctx = avformat_alloc_context();
         fmt_ctx->pb = avio_ctx;
@@ -253,7 +269,7 @@ void* Mp3TtsPlayerImpl::playFunc(void* arg) {
         au_convert_ctx = swr_alloc_set_opts(au_convert_ctx,
                                             out_channel_layout,
                                             out_sample_fmt,
-                                            48000,
+                                            24000,
                                             in_channel_layout,
                                             codec_ctx->sample_fmt,
                                             codec_ctx->sample_rate,

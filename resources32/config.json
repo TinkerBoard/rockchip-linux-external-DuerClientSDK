@@ -1,19 +1,20 @@
 {
     "alertsCapabilityAgent":{
-        "databaseFilePath":"./alerts.db",
+        "databaseFilePath":"/data/duer/alerts.db",
         "downloadAssetsEnabled":false,
-        "alarmAudioFilePath":"./appresources/default_alarm.wav",
-        "alarmShortAudioFilePath":"./appresources/default_alarm.wav",
-        "timerAudioFilePath":"./appresources/default_alarm.wav",
-        "timerShortAudioFilePath":"./appresources/default_alarm.wav",
-        "renderClockFilePath":"./appresources/clock.mp3"
+        "alarmAudioFilePath":"./appresources/default_alarm.pcm",
+        "alarmShortAudioFilePath":"./appresources/default_alarm.pcm",
+        "timerAudioFilePath":"./appresources/default_alarm.pcm",
+        "timerShortAudioFilePath":"./appresources/default_alarm.pcm",
+        "renderClockFilePath":"./appresources/clock.pcm"
     },
     "certifiedSender":{
-        "databaseFilePath":"./certifiedSender.db"
+        "databaseFilePath":"/data/duer/certifiedSender.db"
     },
     "authDelegate":{
-        "clientId":"9XxAvLBSY6iRwpyvEkdp7UeNdVg0iMvo",
-	"authStrategyLib":"./lib/libBdussOAuth.so"
+        "clientId":"9P0TRbyIWImARX1bRnlTTZNXs7gOjR8V",
+        "appName":"RK3308 speaker",
+        "authStrategyLib":"./lib/libBdussOAuth.so"
     },
     "dcsClient":{
 	        "dcsEndPoint":"https://dueros-h2.baidu.com"
@@ -31,7 +32,7 @@
         "botId":"adb"
     },
     "http2Stream":{
-        "userAgent":"Linux DcsSdk/0.7.0",
+        "userAgent":"app/0.1.2.3 DcsSdk/Linux Hera X180 0.1.2.3",
         "debugSwitch":false,
         "debugBoss":"cq02-ps-spider01.cq02.baidu.com:8984"
     },
@@ -44,7 +45,17 @@
         "curloptCapath":"/etc/ssl/certs/"
     },
     "dcssdkVersion":{
-        "version":"0.3.4"
+        "curr_version":"Hera_X180_0.1.2.3"
+    },
+    "cesConfig":{
+        "cesUrl":"https://xiaodu.baidu.com/saiya/log?",
+        "dcsType":"linux_sdk_v3",
+        "deviceBand":"RK3308_32",
+        "deviceModel":"1.0",
+        "operationSystemVersion":"4.4.22",
+        "appVersion":"1.0.1",
+        "cesVersion":"1.0",
+        "cesAsyncSendFlag":true
     },
     "wakeup":{
         "libraryVersion":"0.3.0",
@@ -60,18 +71,23 @@
         }
     },
     "speechParameters":{
-        "speech_pid":"1400",
-        "speech_key":"com.baidu.dumi.dcs31.rk3308",
+        "speech_pid":"1493",
+        "speech_key":"com.baidu.audiox",
+        "use_asrLink":1,
         "speech_dcsAsrUrl":"https://dueros-voice.baidu.com/dcs_asr",
-        "speech_dcsEventUrl":"https://dueros-voice.baidu.com/dcs_event",
-        "speechsdk_version":"3.1.8.3e76721",
+        "speech_pufAsrUrl":"https://vse.baidu.com/v2",
+        "speech_dcsEventUrl":"https://vse.baidu.com/event",
+        "speech_dcsLcUrl":"audiolc.baidu.com",
+        "port":"443",
+        "use_ssl":"1",
+        "useLC":false,
+        "speechsdk_version":"3.2.5.b17a6c2",
         "use_speechLink":"1",
         "oneShot_test":"0",
         "log_file":"/data/duer/speechsdk.log",
-	"key_app_code":"9959452",
 	"vad_dat_file":"./resources/esis_vad_test.pkg",
 	"dat_file_path":"./resources/esis_carlife.pkg",
-	"license_file_path":"./resource/bds_license.dat",
-	"dcs_log_level":0
+	"license_file_path":"./resources/bds_license.dat",
+	"dcs_log_level":6
     }
 }

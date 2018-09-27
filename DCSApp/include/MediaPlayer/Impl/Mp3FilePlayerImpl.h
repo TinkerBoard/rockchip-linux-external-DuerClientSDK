@@ -17,6 +17,7 @@
 #ifndef DUEROS_DCSAPP_INCLUDE_MEDIAPLAYER_MP3FILEPLAYERIMPL_H_
 #define DUEROS_DCSAPP_INCLUDE_MEDIAPLAYER_MP3FILEPLAYERIMPL_H_
 
+#include <DcsSdk/PlayerAvtivityObserver.h>
 #include "DCSApp/ThreadPoolExecutor.h"
 #include "Mp3FilePlayerInterface.h"
 #include "AlsaController.h"
@@ -27,12 +28,15 @@
 namespace duerOSDcsApp {
 namespace mediaPlayer {
 using application::ThreadPoolExecutor;
+using duerOSDcsSDK::sdkInterfaces::PlayerAvtivityObserver;
 
 class Mp3FilePlayerImpl : public Mp3FilePlayerInterface {
 public:
     Mp3FilePlayerImpl(const std::string& audio_dev);
 
     ~Mp3FilePlayerImpl();
+
+    void setPlayerObserver(PlayerAvtivityObserver* observer);
 
     void registerListener(std::shared_ptr<AudioPlayerListener> notify) override;
 
@@ -101,6 +105,7 @@ private:
     std::atomic<bool> m_stopFlag;
     std::atomic<bool> m_playReadyFlag;
     std::atomic<bool> m_exitFlag;
+    PlayerAvtivityObserver* m_observer;
 };
 
 }  // namespace mediaPlayer

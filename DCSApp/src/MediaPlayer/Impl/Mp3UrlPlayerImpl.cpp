@@ -24,13 +24,13 @@ namespace duerOSDcsApp {
 namespace mediaPlayer {
 using application::ThreadPoolExecutor;
 
-#define RESAMPLE_OUTPUT_BUFFER_SIZE 192000
+#define RESAMPLE_OUTPUT_BUFFER_SIZE 16384
 #define PCM_PLAYBUFFER_SIZE 48000
 #define PLAYFINISH_DELAY_TIME_MS 400000L
 #define PLAY_LOOP_DELAY_TIME_MS 30000L
 #define PAUSE_CHECK_INTERVAL_MS 200000L
 #define BUFFER_CHECK_INTERVAL_MS 300000L
-#define BUFFER_REFILL_MIN_SIZE 15
+#define BUFFER_REFILL_MIN_SIZE 2
 #define OUTPUT_SAMPLE_RATE 48000
 #define NEAR_FINISH_TIME_LEFT 8000
 #define MAX_RETRY_OPEN_TIME 3
@@ -79,7 +79,8 @@ Mp3UrlPlayerImpl::Mp3UrlPlayerImpl(const std::string& audio_dev) : m_formatCtx(n
     m_nearlyFinishFlag(false),
     m_shouldBreakFlag(false),
     m_threadAlive(true),
-    m_pcmBufPool(NULL) {
+    m_pcmBufPool(NULL), 
+    m_observer(NULL) {
 #if defined (MTK8516) || defined (Rk3308)
     m_outChannel = 2;
 #else
@@ -157,6 +158,10 @@ Mp3UrlPlayerImpl::~Mp3UrlPlayerImpl() {
     pthread_cond_destroy(&m_decodeCond);
     pthread_cond_destroy(&m_playCond);
     m_status = AUDIOPLAYER_STATUS_IDLE;
+}
+
+void Mp3UrlPlayerImpl::setPlayerActivity(PlayerAvtivityObserver* observer) {
+    m_observer = observer;
 }
 
 void Mp3UrlPlayerImpl::registerListener(std::shared_ptr<AudioPlayerListener> notify) {
@@ -357,10 +362,9 @@ void* Mp3UrlPlayerImpl::decodeFunc(void* arg) {
                     unsigned int resample_buffer_size = len * out_channels * bytes_per_sample;
 
                     if (pos + resample_buffer_size >= PCM_PLAYBUFFER_SIZE) {
-                        int offset_ms = (int)(frame->pts * av_q2d(a_stream->time_base) * 1000);
                         //APP_INFO("decodeFunc player->m_progressMs:%d", player->m_progressMs);
                         //pcm_pool->pushPcmChunk(player->m_pcmBuffer, pos, offset_ms);
-                        player->m_pcmBufPool->pushPcmChunk(player->m_pcmBuffer, pos, offset_ms);
+                        player->m_pcmBufPool->pushPcmChunk(player->m_pcmBuffer, pos, 0);
                         memset(player->m_pcmBuffer, 0, PCM_PLAYBUFFER_SIZE);
                         pos = 0;
                         target_ptr = player->m_pcmBuffer;
@@ -644,7 +648,7 @@ void Mp3UrlPlayerImpl::audioPlay(const std::string& url,
     m_startOffsetMs = offset;
     m_progressMs = m_startOffsetMs;
 
-    unsigned int current_time = deviceCommonLib::deviceTools::currentTimeMs();
+    int64_t current_time = deviceCommonLib::deviceTools::currentTimeMs();
     m_progressStartMs = current_time;
     m_frameTimestamp = current_time;
     m_reportIntervalMs = report_interval;
@@ -685,7 +689,7 @@ void Mp3UrlPlayerImpl::pushStream(unsigned int channels,
     //  APP_INFO("AudioPlayerImpl::pushStream m_progressMs1:%d, buff_size:%ld, m_bytesPersecond:%d", m_progressMs, buff_size, m_bytesPersecond);
     m_progressMs += (unsigned long)((buff_size * 1000.0f) / m_bytesPersecond);
     //    APP_INFO("AudioPlayerImpl::pushStream end m_progressMs:%d", m_progressMs);
-    unsigned int current_time = deviceCommonLib::deviceTools::currentTimeMs();
+    int64_t current_time = deviceCommonLib::deviceTools::currentTimeMs();
 
     if (m_listener != nullptr && current_time - m_progressStartMs >= m_reportIntervalMs) {
         m_listener->playbackProgress(m_progressMs);
@@ -880,7 +884,7 @@ void Mp3UrlPlayerImpl::ffmpegLogOutput(void* ptr,
 
 int Mp3UrlPlayerImpl::interruptCallback(void* ctx) {
     auto this_ptr = (Mp3UrlPlayerImpl*)ctx;
-    long time_diff = deviceCommonLib::deviceTools::currentTimeMs() - this_ptr->m_frameTimestamp;
+    int64_t time_diff = deviceCommonLib::deviceTools::currentTimeMs() - this_ptr->m_frameTimestamp;
 
     if (this_ptr->m_stopFlag) {
         return -1;
@@ -893,6 +897,10 @@ int Mp3UrlPlayerImpl::interruptCallback(void* ctx) {
 }
 
 void Mp3UrlPlayerImpl::executePlaybackStarted() {
+    if (m_observer) {
+        m_observer->playStart(DeviceIoWrapper::getInstance()->getCurrentVolume());
+    }
+
     m_playbackFailedTimes = 0;
     m_executor->submit(
     [this]() {
@@ -904,6 +912,10 @@ void Mp3UrlPlayerImpl::executePlaybackStarted() {
 }
 
 void Mp3UrlPlayerImpl::executePlaybackUnderbuffer(bool beforeStart) {
+    if (m_observer) {
+        m_observer->playStart(0);
+    }
+
     m_executor->submit(
     [this, beforeStart]() {
         PlayProgressInfo playProgressInfo;
@@ -922,6 +934,10 @@ void Mp3UrlPlayerImpl::executePlaybackUnderbuffer(bool beforeStart) {
 }
 
 void Mp3UrlPlayerImpl::executePlaybackBufferrefill() {
+    if (m_observer) {
+        m_observer->playStart(DeviceIoWrapper::getInstance()->getCurrentVolume());
+    }
+
     m_executor->submit(
     [this]() {
         if (m_listener != nullptr) {
@@ -932,6 +948,10 @@ void Mp3UrlPlayerImpl::executePlaybackBufferrefill() {
 }
 
 void Mp3UrlPlayerImpl::executePlaybackError() {
+    if (m_observer) {
+        m_observer->playStart(0);
+    }
+
     if (m_stopFlag) {
         APP_INFO("stop called, cancel report.");
         return;
@@ -951,6 +971,10 @@ void Mp3UrlPlayerImpl::executePlaybackError() {
 }
 
 void Mp3UrlPlayerImpl::executePlaybackStopped() {
+    if (m_observer) {
+        m_observer->playStart(0);
+    }
+
     m_executor->submit(
     [this]() {
         if (m_listener != nullptr) {
@@ -961,6 +985,10 @@ void Mp3UrlPlayerImpl::executePlaybackStopped() {
 }
 
 void Mp3UrlPlayerImpl::executePlaybackPaused() {
+    if (m_observer) {
+        m_observer->playStart(0);
+    }
+
     m_executor->submit(
     [this]() {
         if (m_listener != nullptr) {
@@ -971,6 +999,10 @@ void Mp3UrlPlayerImpl::executePlaybackPaused() {
 }
 
 void Mp3UrlPlayerImpl::executePlaybackResumed() {
+    if (m_observer) {
+        m_observer->playStart(DeviceIoWrapper::getInstance()->getCurrentVolume());
+    }
+
     m_executor->submit(
     [this]() {
         if (m_listener != nullptr) {
@@ -981,6 +1013,9 @@ void Mp3UrlPlayerImpl::executePlaybackResumed() {
 }
 
 void Mp3UrlPlayerImpl::executePlaybackFinished() {
+    if (m_observer) {
+        m_observer->playStart(0);
+    }
     m_executor->submit(
     [this]() {
         if (nullptr != m_listener) {

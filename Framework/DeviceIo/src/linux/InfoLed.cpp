@@ -401,7 +401,7 @@ void InfoLed::led_system_start_t() {
                 if(devInfo) {
                     sprintf(tmpbuf, "%d", m_currentVolume);
                     fseek(devInfo, 25, SEEK_SET);
-                    fprintf(stderr,"tmpbuf:%ld\n", strlen(tmpbuf)+1);
+                    fprintf(stderr,"tmpbuf:%u\n", strlen(tmpbuf)+1);
                     fwrite(tmpbuf,1,strlen(tmpbuf)+1,devInfo);
                     fprintf(stderr,"tmpbuf:%s\n",tmpbuf);
                     fflush(devInfo);
@@ -422,7 +422,7 @@ void InfoLed::led_system_start_t() {
             if(devInfo) {
                 sprintf(tmpbuf,"%d",m_currentVolume);
                 fseek(devInfo,25,SEEK_SET);
-                fprintf(stderr,"tmpbuf:%ld\n",strlen(tmpbuf)+1);
+                fprintf(stderr,"tmpbuf:%u\n",strlen(tmpbuf)+1);
                 fwrite(tmpbuf,1,strlen(tmpbuf)+1,devInfo);
                 fprintf(stderr,"tmpbuf:%s\n",tmpbuf);
                 fflush(devInfo);

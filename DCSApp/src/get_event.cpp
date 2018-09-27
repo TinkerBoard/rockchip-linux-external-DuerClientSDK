@@ -125,7 +125,7 @@ struct alexa_key support_keys [] = {
     //{KEY_PLAY/*WIFI_MODE*/, 1, 1, enter_wifi_mode},
     {KEY_VOLUMEDOWN/*VOL_DOWN*/, 0, 1, volume_step_down},
     {KEY_VOLUMEUP/*VOL_UP*/, 0, 1, volume_step_up},
-    // {KEY_MICMUTE/*MIC_MUTE*/, 0, 1,  mute_mic},
+    {KEY_MICMUTE/*MIC_MUTE*/, 0, 1,  mute_mic},
     // {KEY_MICMUTE/*BT_MODE*/, 1, 1, enter_bt_mode},
     /*next just for evb debug*/
     {KEY_MENU/*WAKEUP*/, 0, 1,  enter_wakeup_mode,},

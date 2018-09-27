@@ -44,7 +44,7 @@ void VoiceAndTouchWakeUpObserver::onKeyWordDetected(std::string keyword,
     DeviceIoWrapper::getInstance()->setRecognizing(true);
     wakeupTriggered(true, beginIndex, endIndex, keyword);
 
-#if 0
+#if 0 
     if (endIndex != sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX &&
         beginIndex == sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX) {
         if (KEYWORD_XIAODUXIAODU == keyword) {
@@ -96,15 +96,12 @@ void VoiceAndTouchWakeUpObserver::onKeyWordDetected(std::string keyword,
 }
 
 void VoiceAndTouchWakeUpObserver::onLocationDetected(int location) {
-    printf("VoiceAndTouchWakeUpObserver onLocationDetected:%d\n", location);
+    APP_INFO("VoiceAndTouchWakeUpObserver onLocationDetected:%d\n", location);
     DeviceIoWrapper::getInstance()->ledNetOff();
     DeviceIoWrapper::getInstance()->setDirection(location);
     DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
 }
 
-void VoiceAndTouchWakeUpObserver::printInfo() {
-    printf("%s------>Line %d--------\n", __FUNCTION__, __LINE__);
-}
 
 void VoiceAndTouchWakeUpObserver::touchStartAsr() {
     APP_INFO("VoiceAndTouchWakeUpObserver touchStartAsr");
@@ -116,30 +113,9 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
                                                   uint64_t beginIndex,
                                                   uint64_t endIndex,
                                                   std::string keyword) {
-#if 1
-    //BDS SDK 不判断网络状态
-    printf("\n============= wakeup trigger==========\n");
-    SoundController::getInstance()->wakeUp();
-    APP_INFO("VoiceAndTouchWakeUpObserver wakeupTriggered");
-
-    if (is_voice_wakeup) {
-
-        //DeviceIoWrapper::getInstance()->setDirection(wake_dir);
-        //DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
-        if (m_dcsSdk) {
-        //    printf("\n============= m_dcsSdk notifyOfWakeWord===wake_dir:%d=======\n", wake_dir);
-            m_dcsSdk->notifyOfWakeWord(beginIndex, endIndex, keyword);
-        }
-    } else {
-        DeviceIoWrapper::getInstance()->ledNetOff();
-        DeviceIoWrapper::getInstance()->setDirection(-1);
-        DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
-        /*if (m_dcsSdk) {
-          m_dcsSdk->startBDSSDKListen();
-        }*/
-    }
-    return;
-#endif
+	// SoundController::getInstance()->wakeUp();
+	APP_INFO("VoiceAndTouchWakeUpObserver wakeupTriggered");
+    DeviceIoWrapper::getInstance()->initializeEQ();
     if ((DUERLINK_NETWORK_SUCCEEDED == DuerLinkWrapper::getInstance()->getNetworkStatus()) ||
         (DUERLINK_NETWORK_CONFIG_SUCCEEDED == DuerLinkWrapper::getInstance()->getNetworkStatus()) ||
         (DUERLINK_NETWORK_RECOVERY_SUCCEEDED == DuerLinkWrapper::getInstance()->getNetworkStatus())) {
@@ -147,30 +123,31 @@ void VoiceAndTouchWakeUpObserver::wakeupTriggered(bool is_voice_wakeup,
             return;
         }
         sdkInterfaces::SdkConnectionState m_sdkConnectionStates = m_dcsSdk->getSdkConnectionStates();
-        APP_INFO("VoiceAndTouchWakeUpObserver wakeupTriggered:%d", m_sdkConnectionStates);
+        APP_INFO("VoiceAndTouchWakeUpObserver  connectionState networkStatus:%d", m_sdkConnectionStates);
         if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_CONNECT_SUCCEED) {
             SoundController::getInstance()->wakeUp();
             DeviceIoWrapper::getInstance()->ledNetOff();
             if (is_voice_wakeup) {
-                int target_dir = DeviceIoWrapper::getInstance()->fetchWakeupDirection();
-                DeviceIoWrapper::getInstance()->setDirection(target_dir);
+                //int target_dir = DeviceIoWrapper::getInstance()->fetchWakeupDirection();
+                //DeviceIoWrapper::getInstance()->setDirection(target_dir);
                 //DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
+                DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
                 if (m_dcsSdk) {
-                    m_dcsSdk->notifyOfWakeWord(endIndex - 8000, endIndex, keyword);
+                    m_dcsSdk->notifyOfWakeWord(beginIndex, endIndex, keyword);
                 }
-            } else {
+            } /*else {
                 DeviceIoWrapper::getInstance()->setDirection(-1);
-                //DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
+                DeviceIoWrapper::getInstance()->ledWakeUp(DeviceIoWrapper::getInstance()->getDirection());
                 if (m_dcsSdk) {
                     m_dcsSdk->notifyOfTapToTalk();
                 }
-            }
+            }*/
         } else {
             //网络故障状态下唤醒打点log
             if (is_voice_wakeup) {
                 APP_INFO("Network unconnected when Voice wakeupd:%s", keyword.c_str());
             }
-            
+
             if (m_sdkConnectionStates == sdkInterfaces::SdkConnectionState::SDK_AUTH_FAILED) {
                 DeviceIoWrapper::getInstance()->setRecognizing(false);
                 SoundController::getInstance()->accountUnbound(nullptr);

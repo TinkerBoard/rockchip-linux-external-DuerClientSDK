@@ -16,15 +16,17 @@
 
 #include <unistd.h>
 #include "Mp3FilePlayerImpl.h"
+#include "DCSApp/DeviceIoWrapper.h"
 #include "LoggerUtils/DcsSdkLogger.h"
 
 namespace duerOSDcsApp {
 namespace mediaPlayer {
+using application::DeviceIoWrapper;
 
-#define MAX_AUDIO_FRAME_SIZE 24000
+#define MAX_AUDIO_FRAME_SIZE 2048
 #define OUTPUT_CHANNEL 1
-#define OUTPUT_SAMPLE_RATE 48000
-#define FRAME_BUFFER_SIZE 48000
+#define OUTPUT_SAMPLE_RATE 24000
+#define FRAME_BUFFER_SIZE 512
 
 std::shared_ptr<Mp3FilePlayerImpl> Mp3FilePlayerImpl::create(const std::string& audio_dev) {
     std::shared_ptr<Mp3FilePlayerImpl> instance(new Mp3FilePlayerImpl(audio_dev));
@@ -43,7 +45,8 @@ Mp3FilePlayerImpl::Mp3FilePlayerImpl(const std::string& audio_dev) : m_executor(
     m_muteFlag(false),
     m_stopFlag(false),
     m_playReadyFlag(false),
-    m_exitFlag(false) {
+    m_exitFlag(false),
+    m_observer(NULL) {
     m_executor = ThreadPoolExecutor::getInstance();
     pthread_mutex_init(&m_mutex, NULL);
     pthread_cond_init(&m_playCond, NULL);
@@ -52,8 +55,8 @@ Mp3FilePlayerImpl::Mp3FilePlayerImpl(const std::string& audio_dev) : m_executor(
     m_alsaController->init(OUTPUT_SAMPLE_RATE, OUTPUT_CHANNEL);
 
     m_audioDecoder = new AudioDecoder(OUTPUT_CHANNEL, OUTPUT_SAMPLE_RATE);
-    m_pcmBuffer = (uint8_t*)av_malloc(MAX_AUDIO_FRAME_SIZE);
-    m_frameBuffer = (uint8_t*)av_malloc(FRAME_BUFFER_SIZE);
+    m_pcmBuffer = (uint8_t*)malloc(MAX_AUDIO_FRAME_SIZE);
+    m_frameBuffer = (uint8_t*)malloc(FRAME_BUFFER_SIZE);
 
     pthread_create(&m_threadId, NULL, playFunc, this);
 }
@@ -78,12 +81,12 @@ Mp3FilePlayerImpl::~Mp3FilePlayerImpl() {
     }
 
     if (m_pcmBuffer != NULL) {
-        av_free(m_pcmBuffer);
+        free(m_pcmBuffer);
         m_pcmBuffer = NULL;
     }
 
     if (m_frameBuffer != NULL) {
-        av_free(m_frameBuffer);
+        free(m_frameBuffer);
         m_frameBuffer = NULL;
     }
 
@@ -94,6 +97,10 @@ Mp3FilePlayerImpl::~Mp3FilePlayerImpl() {
 
     pthread_mutex_destroy(&m_mutex);
     pthread_cond_destroy(&m_playCond);
+}
+
+void Mp3FilePlayerImpl::setPlayerObserver(PlayerAvtivityObserver* observer) {
+    m_observer = observer;
 }
 
 void* Mp3FilePlayerImpl::playFunc(void* arg) {
@@ -140,7 +147,7 @@ void* Mp3FilePlayerImpl::playFunc(void* arg) {
             if (ret == READ_SUCCEED) {
                 uint8_t* p = player->m_pcmBuffer + pos;
 
-                if (pos + len > MAX_AUDIO_FRAME_SIZE) {
+                if (pos + len >= MAX_AUDIO_FRAME_SIZE) {
                     player->fadeinProcess(pos);
                     player->m_alsaController->writeStream(OUTPUT_CHANNEL,
                                                           player->m_pcmBuffer,
@@ -243,6 +250,10 @@ void Mp3FilePlayerImpl::setFadeIn(int timeSec) {
 }
 
 void Mp3FilePlayerImpl::executePlaybackStarted() {
+    if (m_observer) {
+        m_observer->playStart(DeviceIoWrapper::getInstance()->getCurrentVolume());
+    }
+
     if (m_listener == NULL) {
         return;
     }
@@ -254,6 +265,10 @@ void Mp3FilePlayerImpl::executePlaybackStarted() {
 }
 
 void Mp3FilePlayerImpl::executePlaybackFinished() {
+    if (m_observer) {
+        m_observer->playEnd(0);
+    }
+
     if (m_listener == NULL) {
         return;
     }

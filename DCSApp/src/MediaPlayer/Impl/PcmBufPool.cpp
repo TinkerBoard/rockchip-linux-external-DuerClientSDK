@@ -26,7 +26,7 @@ extern "C"
 
 namespace duerOSDcsApp {
 namespace mediaPlayer {
-#define BUFPOOL_MAX_SIZE 25
+#define BUFPOOL_MAX_SIZE 3
 
 PcmBufPool::PcmBufPool() : m_lock(nullptr),
                            m_listener(nullptr),

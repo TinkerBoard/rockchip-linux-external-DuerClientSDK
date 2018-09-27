@@ -64,6 +64,7 @@ compile_app() {
 generate_output() {
     cp -r ${WORK_PATH}/resources  ${OUTPUT_PATH}
     cp -r ${WORK_PATH}/sdk/log.config  ${OUTPUT_PATH}
+    cp -r ${WORK_PATH}/sdk/duerlinklog.config  ${OUTPUT_PATH}
     cp -r ${WORK_PATH}/sdk/lib/*  ${OUTPUT_PATH}/lib
     cp -r ${WORK_PATH}/third/lib/* ${OUTPUT_PATH}/lib
     ${STRIP} -s ${OUTPUT_PATH}/lib/*

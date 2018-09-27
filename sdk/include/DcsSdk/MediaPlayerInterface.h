@@ -331,8 +331,6 @@ public:
      */
     virtual void setLocalPlayObserver(
         std::shared_ptr<LocalSourcePlayerInterface> playerObserver) {}
-
-    AudioPlayerStatus m_audioPlayerStatus;
 };
 
 }  // namespace sdkInterfaces

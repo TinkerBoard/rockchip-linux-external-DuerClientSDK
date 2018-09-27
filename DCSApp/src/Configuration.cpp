@@ -66,7 +66,7 @@ void Configuration::release() {
 }
 
 Configuration::Configuration():m_appConfigFile("./appresources/app_config.json"),
-                               m_duerosConfigFile("./resources/dueros_config.json"),
+                               m_duerosConfigFile("/data/duer/dueros_config.json"),
                                m_commonVolume(DEFAULT_COMMON_VOLUME),
                                m_alertsVolume(DEFAULT_ALERTS_VOLUME),
                                m_infoPlaybackDevice(INFO_DEFAULT_PLAYBACK_DEVICE),
@@ -88,9 +88,9 @@ Configuration::~Configuration() {
 bool Configuration::readConfig() {
     const std::string appConfigFile = "";
     std::string duerosConfigFile = "";
-#ifdef MTK8516
+
     duerosConfigFile = "/data/duer/dueros_config.json";
-#endif
+
     if (!duerosConfigFile.empty()) {
         m_duerosConfigFile = duerosConfigFile;
     }
@@ -371,7 +371,6 @@ bool Configuration::readConfig() {
     }
 
     if (isRecreateDuerosConfigFile) {
-        APP_DEBUG("RecreateDuerosConfigFile.\n");
 #if (defined RaspberryPi) || (defined Hodor) || (defined Kuke) || (defined Dot) || (defined Box86)
         m_deviceId = DeviceIoWrapper::getInstance()->getDeviceId();
 #else

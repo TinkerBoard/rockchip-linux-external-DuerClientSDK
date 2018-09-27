@@ -2,17 +2,18 @@
     "alertsCapabilityAgent":{
         "databaseFilePath":"./alerts.db",
         "downloadAssetsEnabled":false,
-        "alarmAudioFilePath":"./appresources/default_alarm.wav",
-        "alarmShortAudioFilePath":"./appresources/default_alarm.wav",
-        "timerAudioFilePath":"./appresources/default_alarm.wav",
-        "timerShortAudioFilePath":"./appresources/default_alarm.wav",
-        "renderClockFilePath":"./appresources/clock.mp3"
+        "alarmAudioFilePath":"./appresources/default_alarm.pcm",
+        "alarmShortAudioFilePath":"./appresources/default_alarm.pcm",
+        "timerAudioFilePath":"./appresources/default_alarm.pcm",
+        "timerShortAudioFilePath":"./appresources/default_alarm.pcm",
+        "renderClockFilePath":"./appresources/clock.pcm"
     },
     "certifiedSender":{
         "databaseFilePath":"./certifiedSender.db"
     },
     "authDelegate":{
         "clientId":"9XxAvLBSY6iRwpyvEkdp7UeNdVg0iMvo",
+	"appName":"RK3308 speaker",
 	"authStrategyLib":"./lib/libBdussOAuth.so"
     },
     "dcsClient":{
@@ -44,7 +45,17 @@
         "curloptCapath":"/etc/ssl/certs/"
     },
     "dcssdkVersion":{
-        "version":"0.3.4"
+        "curr_version":"RockChip_0.1.0.0"
+    },
+    "cesConfig":{
+        "cesUrl":"https://xiaodu.baidu.com/saiya/log?",
+        "dcsType":"linux_sdk_v3",
+        "deviceBand":"RK3308",
+        "deviceModel":"1.0",
+        "operationSystemVersion":"4.4.22",
+        "appVersion":"1.0.1",
+        "cesVersion":"1.0",
+        "cesAsyncSendFlag":true
     },
     "wakeup":{
         "libraryVersion":"0.3.0",
@@ -61,16 +72,22 @@
     },
     "speechParameters":{
         "speech_pid":"1400",
-        "speech_key":"com.baidu.dumi.dcs31.rk3308",
+        "speech_key":"com.baidu.rk3308",
+        "use_asrLink":1,
         "speech_dcsAsrUrl":"https://dueros-voice.baidu.com/dcs_asr",
-        "speech_dcsEventUrl":"https://dueros-voice.baidu.com/dcs_event",
-        "speechsdk_version":"3.1.8.3e76721",
+        "speech_pufAsrUrl":"https://audiotest.baidu.com/v2",
+        "speech_dcsEventUrl":"https://audiotest.baidu.com/event",
+        "speech_dcsLcUrl":"115.239.210.99",
+        "port":"80",
+        "use_ssl":"0",
+        "useLC":false,
+        "speechsdk_version":"3.2.5.b17a6c2",
         "use_speechLink":"1",
         "oneShot_test":"0",
         "log_file":"/data/duer/speechsdk.log",
-	"key_app_code":"9959452",
+	"vad_dat_file":"./resources/esis_vad_test.pkg",
 	"dat_file_path":"./resources/esis_carlife.pkg",
-	"license_file_path":"./resource/bds_license.dat",
-	"dcs_log_level":0
+	"license_file_path":"./resources/bds_license.dat",
+	"dcs_log_level":6
     }
 }

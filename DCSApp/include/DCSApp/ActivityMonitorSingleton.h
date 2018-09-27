@@ -41,11 +41,13 @@ public:
     static ActivityMonitorSingleton* getInstance();
     static void releaseInstance();
     void updatePlayerStatus(PlayerStatus playerStatus);
+    bool isPlayerIdle() const;
 private:
     ActivityMonitorSingleton(const ActivityMonitorSingleton& ths);
     ActivityMonitorSingleton& operator=(const ActivityMonitorSingleton& ths);
     ActivityMonitorSingleton();
     ~ActivityMonitorSingleton();
+    void updateStatus();
     void updateJsonFile();
     void addPairToDoc(rapidjson::Document& document,
                       const std::string& key,
@@ -61,6 +63,7 @@ private:
     pthread_mutex_t m_mutex;
     MonitorItem m_monitorItem;
     std::string m_prevWriteContent;
+    bool m_isIdle;
     bool m_threadAlive;
 };
 }  // namespace application

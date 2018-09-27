@@ -17,6 +17,7 @@
 #ifndef DUEROS_DCSAPP_INCLUDE_MEDIAPLAYER_MP3URLPLAYERIMPL_H_
 #define DUEROS_DCSAPP_INCLUDE_MEDIAPLAYER_MP3URLPLAYERIMPL_H_
 
+#include <DcsSdk/PlayerAvtivityObserver.h>
 #include <string>
 #include <unistd.h>
 #include <sys/time.h>
@@ -26,6 +27,7 @@
 #include "Mp3UrlPlayerInterface.h"
 #include "AudioPlayerListener.h"
 #include "DCSApp/ThreadPoolExecutor.h"
+#include "DCSApp/DeviceIoWrapper.h"
 #include "PthreadLock.h"
 #include "AutoLock.h"
 
@@ -43,6 +45,8 @@ extern "C"
 namespace duerOSDcsApp {
 namespace mediaPlayer {
 using application::ThreadPoolExecutor;
+using application::DeviceIoWrapper;
+using duerOSDcsSDK::sdkInterfaces::PlayerAvtivityObserver;
 
 class Mp3UrlPlayerImpl : public Mp3UrlPlayerInterface,
     public StreamInterruptListener {
@@ -50,6 +54,8 @@ public:
     Mp3UrlPlayerImpl(const std::string& audio_dev);
 
     ~Mp3UrlPlayerImpl();
+
+    void setPlayerActivity(PlayerAvtivityObserver* observer);
 
     void registerListener(std::shared_ptr<AudioPlayerListener> notify) override;
 
@@ -161,6 +167,7 @@ private:
     pthread_cond_t m_playCond;
     std::atomic<bool> m_threadAlive;
     PcmBufPool* m_pcmBufPool;
+    PlayerAvtivityObserver* m_observer;
 };
 
 }  // mediaPlayer

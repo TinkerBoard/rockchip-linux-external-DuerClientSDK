@@ -1,17 +1,28 @@
 if(BUILD_TTS_SDK)
-    add_definitions(-DLOCALTTS)
-if(NOT ${Platform} MATCHES Sengled)
-    set(LocalSynthesizerPlayer "MediaPlayer/Impl/LocalTtsPlayerImpl.cpp")
-    set(LocalTtsProxy "MediaPlayer/Proxy/LocalTtsProxy.cpp")
-endif()
-    set(TTS_SDK_LIB "ASRTTSManager")
+    add_definitions(-DENABLE_SPEECH_LIB)
+
+    if(ENABLE_LOCAL_TTS)
+        add_definitions(-DENABLE_LOCAL_TTS)
+        set(LocalSynthesizerPlayer "MediaPlayer/Impl/LocalTtsPlayerImpl.cpp")
+        set(LocalTtsProxy "MediaPlayer/Proxy/LocalTtsProxy.cpp")
+    endif()
 endif()
 
-if(BUILD_CRAB_SDK)
-   set(CRAB_SDK_LIB CrabSdk)
-   include_directories("${BREAKPAD_INCLUDE_DIR}")
-   include_directories("${BREAKPAD_INCLUDE_DIR}/breakpad")
-endif()
+if(ENABLE_PCM_FORMAT)
+    add_definitions(-DENABLE_PCM_FORMAT)
+    set(CloudPlayerImplFiles "MediaPlayer/Impl/PcmTtsPlayerImpl.cpp"
+            "MediaPlayer/Impl/PcmUrlPlayer.cpp"
+            "MediaPlayer/Impl/PcmResampler.cpp"
+            "MediaPlayer/Impl/PcmFilePlayerImpl.cpp"
+            "MediaPlayer/Impl/PcmBufPool.cpp"
+            "MediaPlayer/Impl/Mp3FilePlayerImpl.cpp")
+else()
+    set(CloudPlayerImplFiles "MediaPlayer/Impl/Mp3UrlPlayerImpl.cpp"
+            "MediaPlayer/Impl/Mp3TtsPlayerImpl.cpp"
+            "MediaPlayer/Impl/Mp3FilePlayerImpl.cpp"
+            "MediaPlayer/Impl/PcmFilePlayerImpl.cpp"
+            "MediaPlayer/Impl/PcmBufPool.cpp")
+endif ()
 
 if(${Platform} STREQUAL Sengled
         OR ${Platform} STREQUAL Ingenic)
@@ -27,6 +38,10 @@ if(${Platform} MATCHES "Box86")
     set(DuerLinkWrapper_SOURCE_FILES "${Platform}/DuerLinkWrapper.cpp")
 else()
     set(DuerLinkWrapper_SOURCE_FILES "DuerLinkWrapper.cpp")
+endif()
+
+if(ENABLE_VAD)
+    add_definitions(-DENABLE_VAD)
 endif()
 
 if(KITTAI_KEY_WORD_DETECTOR)
@@ -61,7 +76,6 @@ if(BUILD_DLNA)
 endif()
 
 add_subdirectory(Audio)
-include_directories("${ASRTTSManager_SOURCE_DIR}/include")
 add_executable(duer_linux
         main.cpp
         ApplicationManager.cpp
@@ -80,16 +94,9 @@ add_executable(duer_linux
         MediaPlayer/Impl/PthreadLock.cpp
         MediaPlayer/Impl/AlsaController.cpp
         MediaPlayer/Impl/StreamPool.cpp
-        MediaPlayer/Impl/PcmFilePlayerImpl.cpp
-        MediaPlayer/Impl/PcmUrlPlayer.cpp
-        MediaPlayer/Impl/PcmTtsPlayerImpl.cpp
-        MediaPlayer/Impl/Mp3TtsPlayerImpl.cpp
-        MediaPlayer/Impl/PcmResampler.cpp
         MediaPlayer/Impl/BluetoothPlayerImpl.cpp
         MediaPlayer/Impl/AudioDecoder.cpp
         MediaPlayer/Impl/Mp3FilePlayerImpl.cpp
-        MediaPlayer/Impl/PcmBufPool.cpp
-        MediaPlayer/Impl/Mp3UrlPlayerImpl.cpp
         MediaPlayer/Proxy/TtsPlayerProxy.cpp
         MediaPlayer/Proxy/AlertsPlayerProxy.cpp
         MediaPlayer/Proxy/LocalPlayerProxy.cpp
@@ -98,6 +105,7 @@ add_executable(duer_linux
         MediaPlayer/Proxy/BlueToothPlayerProxy.cpp
         get_event.cpp
         DCSKeyHandler.cpp
+	${CloudPlayerImplFiles}
         ${DLNA_SOURCE_FILES}
         ${LocalTtsProxy}
         ${LocalSynthesizerPlayer}
@@ -115,13 +123,11 @@ target_include_directories(duer_linux PUBLIC
     "${duerLink_SOURCE_DIR}/include"
     "${PORTAUDIO_INCLUDE_DIR}"
     "${FFMPEG_INCLUDE_DIR}"
-    "${ASRTTSManager_SOURCE_DIR}/include"
     "${DeviceTools_SOURCE_DIR}/include"
-    "${CrabSdk_SOURCE_DIR}/include"
     )
 
 if(BUILD_ONE_LIB)
-    set(DCS_SDK_LIB DcsSdk DeviceTools)
+    set(DCS_SDK_LIB DcsSdk DeviceTools ComHttpsClient)
 else()
     set(DCS_SDK_LIB DcsClient)
 endif()
@@ -147,21 +153,39 @@ target_link_libraries(duer_linux
         LoggerUtils
         Configuration 
         "${TTS_SDK_LIB}"
-        "${CRAB_SDK_LIB}"
         "${DLNA_SDK_LIB}"
-        iconv
-        bd_alsa_audio_client
-        curl
-        sqlite3
         z
         crypto
         ssl
+        curl
+        iconv
+        bd_alsa_audio_client
+        BDSpeechSDK
+        esis
+        esis-vad
+        vad
+        SDKCore
+        uuid
+        jsoncpp
+        longconnect
+        AudioEncoder
+        AudioDecoder
         )
+
+if(BUILD_CRAB_SDK)
+    target_link_libraries(duer_linux CrabSdk)
+endif()
 
 # use gperftools
 if(BUILD_GPERFTOOLS)
     message("启用gperftools")
     target_link_libraries(duer_linux tcmalloc)
+endif()
+
+# use jemalloc
+if(BUILD_JEMALLOC)
+    message("jemalloc")
+    target_link_libraries(duer_linux jemalloc)
 endif()
 
 # for unbuntu platform
@@ -180,8 +204,7 @@ install(TARGETS duer_linux DESTINATION "${CMAKE_INSTALL_PREFIX}")
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/${DUEROS_SDK_LIB_DIR} DESTINATION ${CMAKE_INSTALL_PREFIX})
 # install the third libs
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/${DUEROS_THIRD_LIB_DIR} DESTINATION ${CMAKE_INSTALL_PREFIX}
+	FILES_MATCHING PATTERN "lib*.so*"
+	PATTERN "engines" EXCLUDE
         PATTERN "*.a" EXCLUDE
-        PATTERN "preloadable_libiconv.so" EXCLUDE
         )
-# PATTERN "engines" EXCLUDE
-# FILES_MATCHING PATTERN "lib*.so*"

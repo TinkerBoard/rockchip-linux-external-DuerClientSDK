@@ -58,6 +58,7 @@
 #define DUEROS_DCS_SDK_INCLUDE_DCS_SDK_DCS_SDK_H_
 
 #include <DcsSdk/DcsSdkParameters.h>
+#include <DcsSdk/PlayerAvtivityObserver.h>
 #include <DcsSdk/ApplicationImplementation.h>
 
 namespace duerOSDcsSDK {
@@ -78,7 +79,7 @@ namespace sdkInterfaces {
  *     @brief DCS SDK API接口入口类。
  * \endif
  */
-class DcsSdk {
+class DcsSdk : public PlayerAvtivityObserver {
 public:
     /**
      * \if english
@@ -119,6 +120,7 @@ public:
      */
     void volumeChanged(int volume, bool muted);
 
+#ifdef SUPPORT_DEBUGGER
     /**
      * \if english
      *     @brief Inform the server the debugger mode has started.
@@ -136,6 +138,7 @@ public:
      * \endif
      */
     void debugStoped();
+#endif
 
     /**
      * \if english
@@ -325,29 +328,9 @@ public:
      */
     void notifyNetworkReady(bool status, const std::string& wifiBssid ="");
 
-    /**
-     * \if english
-     *     @brief Inform SDK authorization status.
-     *     @param[in] status True/False: online/offline.
-     * \else
-     *     @brief 通知SDK授权就绪状态。
-     *     @param[in] status True/False：已联网/未联网。
-     * \endif
-     */
-    void notifyAuthReady(bool status);
+    void enterSleepMode();
 
-    /**
-     * \if english
-     *     @brief Inform SDK reset Http2 Connection.
-     * \else
-     *     @brief 通知SDK重新建立长连接。
-     * \endif
-     */
-    void notifyResetHttp2Connection();
-
-    static void enterSleepMode();
-
-    static void enterWakeupMode();
+    void enterWakeupMode();
 
     static bool recordingStatus();
 
@@ -419,6 +402,9 @@ public:
      */
     bool setBDUSS(const std::string& bduss);
 
+    void playStart(int volume) override;
+
+    void playEnd(int volume) override;
 private:
     /**
      * \if english

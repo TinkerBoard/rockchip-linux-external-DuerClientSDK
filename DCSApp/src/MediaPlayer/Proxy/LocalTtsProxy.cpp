@@ -88,19 +88,15 @@ MediaPlayerStatus LocalTtsProxy::setOffset(std::chrono::milliseconds offset) {
 }
 
 MediaPlayerStatus LocalTtsProxy::play() {
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAYING;
     if (!m_tts_content.empty()) {
         m_impl->ttsPlay(m_tts_content);
-        m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
         return MediaPlayerStatus::SUCCESS;
     } else {
-        m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
         return MediaPlayerStatus::FAILURE;
     }
 }
 
 MediaPlayerStatus LocalTtsProxy::stop() {
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_PAUSE;
     m_impl->ttsStop();
     return MediaPlayerStatus::SUCCESS;
 }
@@ -132,14 +128,12 @@ void LocalTtsProxy::setLocalPlayObserver(
 }
 
 void LocalTtsProxy::speechStarted() {
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_START;
     if (m_playerObserver) {
         m_playerObserver->onPlaybackStarted();
     }
 }
 
 void LocalTtsProxy::speechFinished() {
-    m_audioPlayerStatus = duerOSDcsSDK::sdkInterfaces::AudioPlayerStatus::PLAY_OVER;
     if (m_playerObserver) {
         m_playerObserver->onPlaybackFinished();
     }

@@ -242,13 +242,15 @@ public:
      */
     std::string getWifiBssid();
 
+#ifdef SUPPORT_INFRARED
     /**
      * send infrared ray code request
      * @param carrierFrequency
      * @param pattern
      */
     bool sendInfraredRayCodeRequest(int carrierFrequency,
-                                    const std::string &pattern);
+                                    const std::string &pattern) override;
+#endif
 
     /**
      * set DCS sdk handler
@@ -302,6 +304,7 @@ public:
      */
     void volumeChanged(int volume, bool muted);
 
+#ifdef SUPPORT_DEBUGGER
     bool setStartDebugMode();
 
     bool setStopDebugMode();
@@ -315,6 +318,7 @@ public:
     * Inform the server the debugger mode has stoped.
     */
     void debugStoped();
+#endif
     /**
      * DCS perform close local active alert
      */
