@@ -133,8 +133,11 @@ else()
 endif()
 
 if(CPU_ARCH STREQUAL "aarch64")
-	target_link_libraries(duer_linux utils_bd_ipc)
+	target_link_libraries(duer_linux esis-wkp)
+else()
+	target_link_libraries(duer_linux esis SDKCore)
 endif()
+
 
 target_link_libraries(duer_linux
         ${DCS_SDK_LIB}
@@ -161,10 +164,8 @@ target_link_libraries(duer_linux
         iconv
         bd_alsa_audio_client
         BDSpeechSDK
-        esis
         esis-vad
         vad
-        SDKCore
         uuid
         jsoncpp
         longconnect
