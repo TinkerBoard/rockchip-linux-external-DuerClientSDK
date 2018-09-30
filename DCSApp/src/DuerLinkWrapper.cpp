@@ -76,6 +76,7 @@ void DuerLinkWrapper::logFunction(const char* msg, ...) {
     //static int debug = str ? atoi(str) : 0;
 
     //if (debug) {
+/*
         va_list arg_ptr;
         char msg_buff[_2K] = { 0 };
 
@@ -83,7 +84,8 @@ void DuerLinkWrapper::logFunction(const char* msg, ...) {
         vsnprintf(msg_buff, sizeof(msg_buff), msg, arg_ptr);
         va_end(arg_ptr);
 
-        LINK_INFO(msg_buff);
+        LINK_INFO(msg_buff);//may led to segment fault
+*/
     //}
 }
 
@@ -104,9 +106,9 @@ void DuerLinkWrapper::initDuerLink(const std::string& bdussFilePath, const std::
                                                                        bdussFilePath,
                                                                        clientId);
 #endif
-    // if (!Configuration::getInstance()->getDebug()) {
+    if (!Configuration::getInstance()->getDebug()) {
         DuerLinkMtkInstance::get_instance()->init_duer_link_log(logFunction);
-    //}
+    }
     DuerLinkMtkInstance::get_instance()->set_networkConfig_observer(this);
 
     DuerLinkMtkInstance::get_instance()->set_monitor_observer(this);
