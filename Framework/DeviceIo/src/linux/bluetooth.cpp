@@ -40,7 +40,7 @@ using duerOSDcsApp::framework::BtControlCmd;
 #ifdef BLUEZ5_UTILS
 static char sock_path[] = "/data/bluez5_utils/socket_dueros";
 #else
-static char sock_path[] = "/data/bsa/config/socket_dueros";
+static char sock_path[] = "/data/bsa/config/socket_data_interaction";
 #endif
 
 #define WIFI_STATUS_PATH "/tmp/wifi_status.txt"
